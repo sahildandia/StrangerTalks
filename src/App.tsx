@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, ArrowUpRight, Ban, Check, ChevronLeft, CircleHelp, Flag, Globe2, Heart, LockKeyhole, MessageCircle, Moon, Send, Settings, ShieldCheck, Shuffle, Sparkles, Sun, Users, WifiOff, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Ban, Check, Flag, Globe2, Heart, LockKeyhole, MessageCircle, Moon, Send, Settings, ShieldCheck, Shuffle, Sparkles, Sun, Users, WifiOff, X } from 'lucide-react';
 import { App as NativeApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { configured, db, friendlyError, rpc, TERMS_VERSION, type ChatSession, type Message, type Snapshot } from './lib';
 import Captcha from './Captcha';
+import { useViewport } from './useViewport';
 
 type Modal = 'settings' | 'privacy' | 'guidelines' | 'report' | 'end' | null;
 type Screen = 'home' | 'searching' | 'chat' | 'disconnected';
@@ -11,6 +12,7 @@ const support = import.meta.env.VITE_SUPPORT_EMAIL as string | undefined;
 const time = (date: string) => new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 export default function App() {
+  useViewport();
   const [splash, setSplash] = useState(true);
   const [screen, setScreen] = useState<Screen>('home');
   const [modal, setModal] = useState<Modal>(null);
@@ -38,7 +40,9 @@ export default function App() {
   const lastRefresh = useRef(0);
   const actionLock = useRef(false);
   const sessionRef = useRef<ChatSession | null>(null);
-  const endOfChat = useRef<HTMLDivElement>(null);
+  const messageList = useRef<HTMLDivElement>(null);
+  const followMessages = useRef(true);
+  const [newMessages, setNewMessages] = useState(false);
   const lastTyping = useRef(0);
   const pendingMessage = useRef<{ body: string; nonce: string; sid: string } | null>(null);
   const generation = useRef(0);
@@ -69,7 +73,7 @@ export default function App() {
 
   const apply = useCallback((snapshot: Snapshot) => {
     if (!alive.current || !engaged.current) return;
-    if (sessionRef.current?.id !== snapshot.session?.id) { setMessages([]); setDraft(''); pendingMessage.current = null; }
+    if (sessionRef.current?.id !== snapshot.session?.id) { setMessages([]); setDraft(''); pendingMessage.current = null; followMessages.current = true; setNewMessages(false); }
     sessionRef.current = snapshot.session;
     setSession(snapshot.session);
     setScreen(snapshot.state === 'chat' ? 'chat' : snapshot.state === 'waiting' ? 'searching' : 'disconnected');
@@ -129,7 +133,26 @@ export default function App() {
     return () => { void db?.removeChannel(channel); };
   }, [session?.id, screen, refresh]);
 
-  useEffect(() => { endOfChat.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages.length, screen]);
+  const latestMessage = messages.at(-1)?.id;
+  useEffect(() => {
+    const list = messageList.current;
+    if (!list || screen !== 'chat') return;
+    if (followMessages.current) list.scrollTop = list.scrollHeight;
+    else if (latestMessage) setNewMessages(true);
+  }, [latestMessage, screen]);
+  useEffect(() => {
+    const list = messageList.current;
+    if (list && followMessages.current) list.scrollTop = list.scrollHeight;
+  }, [session?.typing_a_until, session?.typing_b_until]);
+  useEffect(() => {
+    const list = messageList.current;
+    if (!list) return;
+    const observer = new ResizeObserver(() => {
+      if (followMessages.current) list.scrollTop = list.scrollHeight;
+    });
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [screen]);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const handler = NativeApp.addListener('backButton', () => {
@@ -190,8 +213,9 @@ export default function App() {
     try {
       const message = await rpc<Message>('st_send', { p_session_id: current.id, p_body: item.body, p_nonce: item.nonce });
       if (sessionRef.current?.id === current.id) {
+        followMessages.current = true; setNewMessages(false);
         setMessages(previous => previous.some(m => m.id === message.id) ? previous : [...previous, message].slice(-200));
-        setDraft(''); pendingMessage.current = null;
+        setDraft(currentDraft => currentDraft.trim() === item.body ? '' : currentDraft); pendingMessage.current = null;
       }
     } catch (e) { setError(friendlyError(e)); }
     finally { setSending(false); }
@@ -215,7 +239,7 @@ export default function App() {
   const broken = !online || !connected;
 
   if (splash) return <div className="splash"><div className="brand-icon"><MessageCircle /></div><h1>StrangerTalk<span>.</span></h1><p>A world of conversations awaits.</p></div>;
-  return <div className="app-shell">
+  return <div className={`app-shell screen-${screen}`}>
     <aside className="sidebar">
       <a className="brand" href="#" onClick={e => { e.preventDefault(); if (screen === 'home') setModal(null); }}><span className="brand-icon"><MessageCircle size={23} /></span>StrangerTalk<span className="brand-dot">.</span></a>
       <div className="side-main"><span className="eyebrow">A LITTLE HELLO CAN</span><h1>Open up<br />a whole<br /><em>new world.</em></h1><p>Different lives. Fresh perspectives.<br />One conversation at a time.</p><div className="orb-art" aria-hidden="true"><div className="orbit o1"/><div className="orbit o2"/><div className="planet"><Globe2 size={88} strokeWidth={1}/></div><span className="orbit-label label-a">hello <span>✦</span></span><span className="orbit-label label-b">नमस्ते</span><span className="orbit-label label-c">hola <Heart size={14}/></span><i className="star s1">✦</i><i className="star s2">✦</i></div></div>
@@ -224,15 +248,18 @@ export default function App() {
     <main className="main-panel">
       <header className="topbar"><div className="mobile-brand"><span className="brand-icon"><MessageCircle size={21}/></span>StrangerTalk<span>.</span></div><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><button className="icon-button" aria-label="Open settings" onClick={() => setModal('settings')}><Settings size={21}/></button></header>
       {broken && engaged.current ? <div className="network-banner" role="status"><WifiOff size={16}/> Reconnecting… Messages are paused. Chats close after 75 seconds offline.<button onClick={() => void refresh()}>Retry</button></div> : null}
+      {!online && screen === 'home' ? <div className="network-banner" role="status"><WifiOff size={16}/> You’re offline. Connect to the internet to start a conversation.</div> : null}
       {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div> : null}
-      {notice ? <div className="feedback notice" role="status"><Check size={18}/><span>{notice}</span></div> : null}
+      {notice ? <div className="feedback notice" role="status"><Check size={18}/><span>{notice}</span><button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={16}/></button></div> : null}
 
-      {screen === 'home' ? <section className="welcome">
+      {screen === 'home' ? <section className="welcome" aria-label="Start a conversation">
+        <div className="welcome-story">
         <span className="pill"><Sparkles size={14}/> A connection starts with a hello</span>
         <div className="hero-icon" aria-hidden="true"><MessageCircle size={48} strokeWidth={1.5}/><span><Sparkles size={18}/></span></div>
-        <h2>Someone new.<br /><span>Something unexpected.</span></h2><p className="intro">Talk to strangers. Make new connections.<br />Just you, a stranger, and a little curiosity.</p>
+        <h2>Someone new.<br /><span>A fresh perspective.</span></h2><p className="intro">Talk to strangers. Make new connections.<br />One hello can change your day.</p>
         <div className="feature-row"><div><span><Users size={20}/></span><strong>Real people</strong><small>One-to-one chats</small></div><div><span><LockKeyhole size={20}/></span><strong>Stay anonymous</strong><small>No name needed</small></div><div><span><Shuffle size={20}/></span><strong>Fresh connections</strong><small>A new perspective</small></div></div>
-        <div className="start-card"><label className="check-row"><input type="checkbox" checked={adult} onChange={e => setAdult(e.target.checked)}/><span>I confirm that I am <strong>18 or older</strong>.</span></label><label className="check-row"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}/><span>I agree to the <button className="text-button" onClick={e => { e.preventDefault(); setModal('guidelines'); }}>Community Guidelines</button> and <button className="text-button" onClick={e => { e.preventDefault(); setModal('privacy'); }}>Privacy Policy</button>.</span></label>
+        </div>
+        <div className="start-card"><div className="card-caption"><span>YOUR NEXT HELLO</span><span>18+ only</span></div><label className="check-row"><input type="checkbox" checked={adult} onChange={e => setAdult(e.target.checked)}/><span>I confirm that I am <strong>18 or older</strong>.</span></label><label className="check-row"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}/><span>I agree to the <button className="text-button" onClick={e => { e.preventDefault(); setModal('guidelines'); }}>Community Guidelines</button> and <button className="text-button" onClick={e => { e.preventDefault(); setModal('privacy'); }}>Privacy Policy</button>.</span></label>
           {needsCaptcha ? <Captcha key={captchaKey} onToken={setCaptchaToken}/> : null}
           <button className="button primary start-button" disabled={busy || !adult || !consent || !online || (needsCaptcha && !captchaToken)} onClick={start}><MessageCircle size={20}/>{busy ? 'Connecting securely…' : 'Start a conversation'}<ArrowRight size={20}/></button>
           <p className="micro"><ShieldCheck size={13}/> Be kind. Stay curious. Keep personal details private.</p>
@@ -242,9 +269,9 @@ export default function App() {
 
       {screen === 'searching' ? <section className="center-state"><div className="search-art" aria-hidden="true"><div/><div/><span className="hero-icon"><Shuffle size={45}/></span></div><span className="pill">A new perspective is on its way</span><h2>Searching for<br /><span>a stranger…</span></h2><p>We’re looking for another available adult.<br />If nobody else is here, we’ll keep waiting.</p><div className="dots" aria-label="Searching"><i/><i/><i/></div><button className="button secondary" disabled={busy} onClick={leave}><X size={18}/> Cancel search</button><p className="micro">Only real people. No bots or simulated matches.</p></section> : null}
 
-      {screen === 'chat' ? <section className="chat-area"><div className="chat-heading"><div className="stranger-avatar"><MessageCircle size={25}/><i/></div><div><h2>New stranger <Sparkles size={15}/></h2><p><i className={`status-dot ${broken ? 'muted' : ''}`}/>{broken ? 'Reconnecting' : 'Connected'} <span>· Anonymous text chat</span></p></div><button className="icon-button" aria-label="Report this stranger" onClick={() => setModal('report')}><Flag size={19}/></button></div>
-        <div className="message-list" role="log" aria-label="Conversation"><div className="chat-start"><ShieldCheck size={22}/><strong>You’re connected. Say hello!</strong><p>Be respectful. Never share personal information.<br />Chats are temporary and are not end-to-end encrypted.</p></div>{messages.map(message => <div key={message.id} className={`message ${message.sender_id === uid ? 'mine' : 'theirs'}`}><span>{message.body}</span><time dateTime={message.created_at}>{time(message.created_at)}{message.sender_id === uid ? <Check size={12}/> : null}</time></div>)}{typing ? <div className="typing"><div className="dots"><i/><i/><i/></div> Stranger is typing…</div> : null}<div ref={endOfChat}/></div>
-        <div className="chat-composer"><form onSubmit={e => void send(e)}><label className="sr-only" htmlFor="message">Message</label><input id="message" autoComplete="off" maxLength={2000} placeholder="A simple hello goes a long way…" value={draft} onChange={e => type(e.target.value)} disabled={broken || busy || sending}/><button className="send-button" aria-label={sending ? 'Sending message' : 'Send message'} disabled={!draft.trim() || broken || busy || sending}><Send size={20}/></button></form><div className="chat-actions"><button className="button secondary" disabled={busy || broken || sending} onClick={next}><Shuffle size={17}/>Next stranger</button><button className="text-button end-button" disabled={busy || sending} onClick={() => setModal('end')}>End chat</button><button className="icon-button" disabled={busy} aria-label="Block this stranger" onClick={() => { setReason('other'); setModal('report'); }}><Ban size={17}/></button></div></div>
+      {screen === 'chat' ? <section className="chat-area" aria-label="Live chat"><div className="chat-heading"><div className="stranger-avatar"><MessageCircle size={25}/><i/></div><div><h2>New stranger <Sparkles size={15}/></h2><p><i className={`status-dot ${broken ? 'muted' : ''}`}/>{broken ? 'Reconnecting' : 'Connected'} <span>· Anonymous text chat</span></p></div><button className="icon-button" aria-label="Report this stranger" onClick={() => setModal('report')}><Flag size={19}/></button></div>
+        <div className="conversation-body"><div ref={messageList} className="message-list" role="log" aria-label="Conversation" onScroll={e => { const list = e.currentTarget; followMessages.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; if (followMessages.current) setNewMessages(false); }}><div className="chat-start"><ShieldCheck size={22}/><strong>You’re connected. Say hello!</strong><p>Be respectful. Keep personal details private.<br />Temporary chat · Not end-to-end encrypted</p></div>{messages.map(message => <div key={message.id} className={`message ${message.sender_id === uid ? 'mine' : 'theirs'}`}><span>{message.body}</span><time dateTime={message.created_at}>{time(message.created_at)}{message.sender_id === uid ? <Check size={12}/> : null}</time></div>)}{typing ? <div className="typing"><div className="dots"><i/><i/><i/></div> Stranger is typing…</div> : null}</div>{newMessages ? <button className="jump-latest" onClick={() => { followMessages.current = true; setNewMessages(false); const list = messageList.current; if (list) list.scrollTop = list.scrollHeight; }}><ArrowDown size={15}/>New messages</button> : null}</div>
+        <div className="chat-composer"><form onSubmit={e => void send(e)}><label className="sr-only" htmlFor="message">Message</label><input id="message" autoComplete="off" enterKeyHint="send" maxLength={2000} placeholder="Say something kind…" value={draft} onChange={e => type(e.target.value)} disabled={broken || busy}/><button className="send-button" type="submit" onPointerDown={e => e.preventDefault()} aria-label={sending ? 'Sending message' : 'Send message'} disabled={!draft.trim() || broken || busy || sending}><Send size={20}/></button></form><div className="chat-actions"><button className="button secondary" disabled={busy || broken || sending} onClick={next}><Shuffle size={17}/>Next stranger</button><button className="text-button end-button" disabled={busy || sending} onClick={() => setModal('end')}>End chat</button><button className="icon-button" disabled={busy} aria-label="Block this stranger" onClick={() => { setReason('other'); setModal('report'); }}><Ban size={17}/></button></div></div>
       </section> : null}
 
       {screen === 'disconnected' ? <section className="center-state"><div className="hero-icon"><MessageCircle size={45}/></div><span className="pill">Every hello is a new beginning</span><h2>This conversation<br /><span>has ended.</span></h2><p>{session?.end_reason === 'timeout' ? 'The connection timed out or reached its one-hour limit.' : 'Ready for another perspective?'}<br />Your next conversation is a tap away.</p><button className="button primary" disabled={busy || !online} onClick={next}><Shuffle size={18}/>Find a new stranger<ArrowRight size={18}/></button><button className="text-button" disabled={busy} onClick={() => { generation.current++; engaged.current = false; setScreen('home'); setError(''); setMessages([]); }}>Back to home</button>{session ? <button className="text-button" onClick={() => setModal('report')}><Flag size={14}/> Report or block last stranger</button> : null}</section> : null}
@@ -252,7 +279,7 @@ export default function App() {
     </main>
 
     {modal ? <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget && !busy) setModal(null); }}><dialog open className="modal" aria-modal="true" aria-labelledby="modal-title" onCancel={e => { e.preventDefault(); if (!busy) setModal(null); }}><div className="modal-heading"><h2 id="modal-title">{modal === 'settings' ? 'Make yourself at home' : modal === 'privacy' ? 'Your privacy matters' : modal === 'guidelines' ? 'A kinder corner of the internet' : modal === 'report' ? 'Keep the community safe' : 'End this conversation?'}</h2><button className="icon-button" disabled={busy} aria-label="Close dialog" onClick={() => setModal(null)}><X size={20}/></button></div>
-      {modal === 'settings' ? <div className="settings-list"><p>A little space for a fresh perspective.</p><button onClick={() => setLight(v => !v)}>{light ? <Sun/> : <Moon/>}<span>Appearance<small>{light ? 'Light' : 'Midnight'} theme</small></span><span className="pill">Switch</span></button><button onClick={() => setModal('privacy')}><LockKeyhole/><span>Privacy policy<small>How your data is handled</small></span><ArrowRight size={18}/></button><button onClick={() => setModal('guidelines')}><ShieldCheck/><span>Community guidelines<small>Be kind. Stay safe.</small></span><ArrowRight size={18}/></button><div className="about"><MessageCircle/><strong>StrangerTalk 1.0.0</strong><p>Talk to Strangers. Make New Connections.</p><small>For adults 18+ · Text only</small></div></div> : null}
+      {modal === 'settings' ? <div className="settings-list"><p>A little space for a fresh perspective.</p><button onClick={() => setLight(v => !v)}>{light ? <Sun/> : <Moon/>}<span>Appearance<small>{light ? 'Light' : 'Midnight'} theme</small></span><span className="pill">Switch</span></button><button onClick={() => setModal('privacy')}><LockKeyhole/><span>Privacy policy<small>How your data is handled</small></span><ArrowRight size={18}/></button><button onClick={() => setModal('guidelines')}><ShieldCheck/><span>Community guidelines<small>Be kind. Stay safe.</small></span><ArrowRight size={18}/></button><div className="about"><MessageCircle/><strong>StrangerTalk 1.0.1</strong><p>Talk to Strangers. Make New Connections.</p><small>For adults 18+ · Text only</small></div></div> : null}
       {modal === 'privacy' ? <div className="legal"><p>Policy version {TERMS_VERSION}. StrangerTalk uses a random Supabase identity, stored on your device, without an email or phone number. The service provider can process IP addresses and technical security logs. Anonymous does not mean untraceable.</p><h3>Temporary conversations</h3><p>Messages travel over encrypted connections (HTTPS/WSS), but are readable by the service operator. They are not end-to-end encrypted. Chats last at most one hour. A scheduled cleanup deletes ordinary messages within about 11 minutes after a chat ends, or about 61 minutes after sending, whichever comes first. Ended session records last up to a day.</p><h3>Reports and blocks</h3><p>A report saves up to the last 20 messages as private evidence for up to 30 days. Only the operator can review reports. Blocked identity pairs and consent records are retained with your anonymous identity, which expires after 90 days of inactivity. Moderation action logs expire after 90 days. Provider logs and backups can follow separate provider retention schedules.</p><h3>Your device and choices</h3><p>Session credentials and appearance settings are stored in the app’s private device storage (browser storage on web). Clearing app data removes your identity and blocks on this device. Blocks and bans apply to an identity; a person can return with a new identity. No advertising or analytics SDK is included.</p><p>The 18+ confirmation is a self-attestation, not verified age. Do not send names, phone numbers, addresses, passwords, or sensitive information.</p><h3>Contact and deletion</h3><p>{support ? <>Contact <a href={`mailto:${support}`}>{support}</a> for privacy or safety requests. </> : 'No support email is configured. Use the in-chat Report and Block controls for safety concerns. '}Your anonymous reference: <code>{uid || 'Not signed in'}</code>. {support ? 'Include it in an owner request. ' : null}The app contains no automatic emergency response.</p><p><a href="https://supabase.com/privacy" target="_blank" rel="noreferrer">Supabase privacy information</a>. If CAPTCHA is enabled, hCaptcha also processes challenge data under <a href="https://www.hcaptcha.com/privacy" target="_blank" rel="noreferrer">its privacy policy</a>.</p></div> : null}
       {modal === 'guidelines' ? <div className="legal"><div className="safety-icon"><ShieldCheck/></div><p>StrangerTalk is for adults 18 and older. By continuing, you agree to these rules.</p><ul><li>Treat people with respect. No harassment, hate, threats, or bullying.</li><li>No sexual solicitation, exploitation, grooming, or content involving minors.</li><li>No scams, spam, links, or illegal activity.</li><li>Keep personal details private. Never send money or share your location.</li><li>If someone makes you uncomfortable, end the chat, report, and block them.</li></ul><p>Basic automated filters and message limits reduce some abuse; they cannot detect every harmful message. Reports go to the app operator for manual review. A report also blocks that anonymous identity.</p><p>If someone appears under 18, end and report the chat. If there is immediate danger, contact your local emergency services.</p>{support ? <p>Safety contact: <a href={`mailto:${support}`}>{support}</a></p> : null}</div> : null}
       {modal === 'report' ? <div className="legal"><p>Reporting sends up to the last 20 messages to the app owner for review, ends the chat, and blocks this anonymous identity.</p><label htmlFor="reason">Reason</label><select id="reason" value={reason} onChange={e => setReason(e.target.value)}><option value="harassment">Harassment or hate</option><option value="sexual_content">Sexual content or solicitation</option><option value="underage">Person appears under 18</option><option value="spam">Spam or scam</option><option value="other">Other safety concern</option></select><button className="button primary" disabled={busy} onClick={() => safety(true)}><Flag size={17}/>{busy ? 'Saving…' : 'Report and block'}</button><button className="button secondary" disabled={busy} onClick={() => safety(false)}><Ban size={17}/>Block without reporting</button><p className="micro">Blocking lasts for this anonymous identity. It cannot stop someone creating a new identity.</p></div> : null}
