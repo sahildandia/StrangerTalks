@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 echo 'Run in your private GitHub Codespace. Do not paste secrets into chat or source files.'
+source scripts/ensure-setup-tools.sh
 gh auth status >/dev/null 2>&1 || { echo 'Sign in first with: gh auth login --web'; exit 1; }
 read -r -p 'Paste your Supabase project reference (letters in its URL): ' ST_REF
 [[ "$ST_REF" =~ ^[a-z0-9]{20}$ ]] || { echo 'Expected the 20-character project reference from Supabase settings.'; exit 1; }

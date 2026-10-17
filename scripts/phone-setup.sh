@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 echo 'StrangerTalk phone setup. Keep this Codespace private.'
-command -v gh >/dev/null || { echo 'Run this inside GitHub Codespaces, which includes GitHub CLI.'; exit 1; }
+source scripts/ensure-setup-tools.sh
 gh auth status >/dev/null 2>&1 || { echo 'Sign in first with: gh auth login --web'; exit 1; }
 read -r -p 'Paste your Supabase project URL: ' ST_URL
 read -r -p 'Paste your PUBLIC publishable key: ' ST_PUBLIC_KEY
