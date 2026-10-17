@@ -3,7 +3,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 echo 'StrangerTalk phone setup. Keep this Codespace private.'
 source scripts/ensure-setup-tools.sh
-gh auth status >/dev/null 2>&1 || { echo 'Sign in first with: gh auth login --web'; exit 1; }
+# The automatic Codespaces integration token cannot manage Actions variables/secrets.
+# Use the user's separately authorized CLI login for this setup process only.
+unset GH_TOKEN GITHUB_TOKEN
+gh auth status >/dev/null 2>&1 || { echo 'Authorize your GitHub login first with: env -u GH_TOKEN -u GITHUB_TOKEN gh auth login --hostname github.com --git-protocol https --web'; exit 1; }
 ST_URL="${VITE_SUPABASE_URL:-}"
 ST_PUBLIC_KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-}"
 # Only public app settings belong in this optional JSON file; never admin credentials.

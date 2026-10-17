@@ -65,7 +65,7 @@ Use Chrome's **⋮ → Desktop site** when a dashboard hides an option. The assi
    bash scripts/backend-setup.sh
    ```
 
-9. Use Codespaces **Source Control → Stage All Changes**, enter `Add StrangerTalk`, then **Commit → Sync Changes**. The ignore rules keep backups, passwords, app builds, local test data, and ZIPs out of Git. If GitHub requests authorization for repository secrets or workflow changes, authorize your own private repository. A failure from `gh` should be resolved by signing in with `gh auth login --web`; do not paste an access token into a command or source file.
+9. Use Codespaces **Source Control → Stage All Changes**, enter `Add StrangerTalk`, then **Commit → Sync Changes**. The ignore rules keep backups, passwords, app builds, local test data, and ZIPs out of Git. If GitHub requests authorization for repository secrets or workflow changes, authorize your own private repository. Codespaces' automatic integration token cannot manage Actions variables/secrets. The setup helpers use a separately authorized CLI login. Sign in once with `env -u GH_TOKEN -u GITHUB_TOKEN gh auth login --hostname github.com --git-protocol https --web`, complete GitHub's device authorization yourself, then retry setup. Do not paste an access token into a command, source file or chat.
 
 ### Deploy the backend and enable cleanup
 
