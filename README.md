@@ -2,9 +2,15 @@
 
 Anonymous one-to-one text chat for adults, with React + TypeScript + Vite, Supabase, and Capacitor Android. The source contains real database-backed matching and messaging. There are no bots, simulated messages, or invented online counts.
 
-**Status:** source generated and local checks performed; see `docs/VERIFICATION.md`. Supabase must be provisioned and connected. A usable Android APK has not yet been built. No real-device or hosted Supabase testing is claimed.
+**Status:** signed Android release APK built successfully; Supabase deployed and automated live chat/API checks passed. [Download release 3](https://github.com/sahildandia/StrangerTalks/actions/runs/39051748514/artifacts/12108077167) while signed into GitHub (artifact expires 24 October 2026). The ZIP contains the APK and checksum. Real Android device testing remains pending; see `docs/VERIFICATION.md`.
 
-## Start here — only Step 1 for now
+## Current project setup
+
+The private repository `sahildandia/StrangerTalks` and Supabase project `sqchwdaspzkkfxavidha` are configured. Both database migrations are installed, their migration history is recorded, and the retention scheduler has completed successfully. Anonymous authentication and multi-client API checks passed. The permanent Android signing key is stored in repository secrets and the owner has saved its private backup.
+
+Backend setup below is a reference for a future fresh deployment. This configured project does not need another access token or another application of the initial SQL migration. No support email is required.
+
+## First-time account setup reference
 
 On your Android phone, open [GitHub signup](https://github.com/signup) in Chrome. Create a **free personal account** and verify your email. If you already have one, sign in. Then tell the assistant **“GitHub ready”**. It will guide the next step. You do not need a laptop, Android Studio, or programming knowledge.
 
@@ -59,7 +65,7 @@ Use Chrome's **⋮ → Desktop site** when a dashboard hides an option. The assi
 
 7. In the explorer, download **signing-backup.zip** using its file menu's **Download** action. Store it privately with your password manager or encrypted personal backup. It contains the signing key and password. Do not upload it to the repository or share it in chat. Losing the key prevents compatible updates to your existing APK. Downloading a ZIP to your phone does not require opening it there.
 
-8. Store backend credentials with the next script; its secret prompts hide your input:
+8. For a fresh backend that has not already been deployed, store backend credentials with the next script; its secret prompts hide your input. Skip this for the configured project described above:
 
    ```sh
    bash scripts/backend-setup.sh
