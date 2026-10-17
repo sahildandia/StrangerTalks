@@ -2,7 +2,7 @@
 
 Anonymous one-to-one text chat for adults, with React + TypeScript + Vite, Supabase, and Capacitor Android. The source contains real database-backed matching and messaging. There are no bots, simulated messages, or invented online counts.
 
-**Status:** signed Android release APK built successfully; Supabase deployed and automated live chat/API checks passed. [Download release 3](https://github.com/sahildandia/StrangerTalks/actions/runs/39051748514/artifacts/12108077167) while signed into GitHub (artifact expires 24 October 2026). The ZIP contains the APK and checksum. Real Android device testing remains pending; see `docs/VERIFICATION.md`.
+**Status:** signed Android **1.0.1** is available with a fixed phone viewport, independent chat scrolling, a keyboard-aware composer and refined mobile UI. [Download release 5](https://github.com/sahildandia/StrangerTalks/actions/runs/39053110297/artifacts/12108014849) while signed into GitHub (artifact expires 24 October 2026). Extract the ZIP and install the APK over the existing app. Supabase is deployed; automated live API checks, eight browser layout checks and Android signature verification passed. Device confirmation of this update remains pending; see `docs/VERIFICATION.md`.
 
 ## Current project setup
 
