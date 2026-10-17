@@ -12,12 +12,25 @@ Story: an adult accepts the rules → signs in anonymously with Supabase → cal
 
 Database scenarios: consent and controller lease; wait for second user/shared match/idempotent join; messages/retry/typing/flood/content filter; outsider reads/forged writes/private access denied; Next/end/stale action rejection; report evidence limit/two-way blocks; offline expiry/reconnect/retention; twelve simultaneous users in six disjoint conversations; cancel/moderator restriction and audit logging.
 
-## Still requires connected services / devices
+## Hosted Supabase verification
 
-- Hosted Supabase anonymous sign-in, token persistence/refresh, CAPTCHA and hosted API grants.
-- Hosted Postgres Changes delivery and RLS subscription checks, with polling recovery.
-- Installation and successful execution of Supabase's pg_cron schedule (the local test server does not include that extension).
-- A successful Android Gradle/APK build, signature verification, download, install, update, keyboard/lifecycle behavior, and real conversation between two devices.
+- Applied both migrations to project `sqchwdaspzkkfxavidha` and recorded their versions in migration history. Confirmed all ten application tables have RLS enabled.
+- Installed the every-minute `strangertalk-retention` pg_cron job and confirmed a successful execution. No active test queue entries or memberships remained afterward.
+- Three independent anonymous API clients exercised consent, waiting, shared matching, heartbeats, message persistence, retry deduplication, typing expiry, Next, cancellation, reporting, and blocking.
+- Confirmed authenticated Postgres Changes delivery to a recipient. A third, unrelated client could neither read the conversation's messages nor forge a send. Initial subscription startup timed out in the first run; two later runs passed with explicit authentication and subscription warmup. The app also reconciles every three seconds.
+- Test clients were signed out and conversations ended. Synthetic test records follow the configured retention policy.
+
+## Signed Android release
+
+- GitHub Actions [release run 3](https://github.com/sahildandia/StrangerTalks/actions/runs/39051748514) succeeded using Java 21, Android SDK 36, and the owner's permanent RSA-4096 signing key. Source commit: `d77ed8344b97c7f1ece57569e081c0ba3e6f85f1`. Subsequent documentation edits do not affect this APK.
+- Android `apksigner verify --verbose --print-certs` passed with APK Signature Scheme v2. Certificate SHA-256: `218f6533c7a512c5d47ea815653d8b81ccf0a166eaa044ea697e79454bdf7cc9`.
+- Downloaded the artifact and independently checked its embedded APK checksum: `1419af8c13fda72d0e56e879b46bfb40ed75808d851be9f8c37a3a547b9f1d8a` (`StrangerTalk-release.apk`). ZIP digest matched GitHub's artifact digest.
+- Artifact: `StrangerTalk-release-3`, 3,189,097 bytes, expires 24 October 2026. A local copy is preserved in the workspace deliverables. Signing material is excluded from both app and source archives.
+
+## Still requires devices / further acceptance checks
+
+- Native token persistence/refresh across restarts and optional CAPTCHA on an actual Android WebView.
+- Android installation, compatible update, keyboard/lifecycle behavior, and a real conversation between two devices.
 - Human review of report operations, support contact, public-launch abuse defenses, and the privacy notice for the actual operator and region.
 
-No APK build, cloud deployment, real-device testing, or live Supabase authentication is claimed. See TEST-PLAN.md for the remaining acceptance checks. The app deliberately displays a setup error until actual public backend configuration is supplied.
+Hosted checks used automated clients, not people or Android devices. See TEST-PLAN.md for the remaining acceptance checks. Public backend settings are configured; administrative credentials are excluded from the app.
