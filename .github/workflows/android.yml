@@ -1,0 +1,79 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Release uses your permanent signing key. Debug is only for temporary testing.'
+        required: true
+        default: release
+        type: choice
+        options: [release, debug]
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPPORT_EMAIL: ${{ vars.VITE_SUPPORT_EMAIL }}
+      VITE_HCAPTCHA_SITE_KEY: ${{ vars.VITE_HCAPTCHA_SITE_KEY }}
+      CAPACITOR_HOSTNAME: ${{ vars.CAPACITOR_HOSTNAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm run check:config
+      - run: npm test
+      - run: npm run build
+      - run: npx cap sync android
+      - run: npm run assets
+      - name: Install Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Restore release signing key
+        if: inputs.build_type == 'release'
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          test -n "$KEYSTORE" && test -n "$STORE_PASSWORD" && test -n "$KEY_PASSWORD" && test -n "$KEY_ALIAS" || { echo 'Run scripts/phone-setup.sh in your private Codespace first.'; exit 1; }
+          printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/strangertalk.jks"
+          chmod 600 "$RUNNER_TEMP/strangertalk.jks"
+      - name: Build and verify APK
+        env:
+          BUILD_TYPE: ${{ inputs.build_type }}
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/strangertalk.jks
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          chmod +x android/gradlew
+          if [ "$BUILD_TYPE" = 'release' ]; then TASK=assembleRelease; else TASK=assembleDebug; fi
+          (cd android && ./gradlew "$TASK" --no-daemon)
+          mkdir -p apk
+          cp "android/app/build/outputs/apk/$BUILD_TYPE/app-$BUILD_TYPE.apk" "apk/StrangerTalk-$BUILD_TYPE.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "apk/StrangerTalk-$BUILD_TYPE.apk"
+          (cd apk && sha256sum *.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StrangerTalk-${{ inputs.build_type }}-${{ github.run_number }}
+          path: apk/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/strangertalk.jks"
