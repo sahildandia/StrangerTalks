@@ -40,7 +40,7 @@ Use Chrome's **⋮ → Desktop site** when a dashboard hides an option. The assi
 1. Download `StrangerTalk-source.zip` to your phone.
 2. At [GitHub new repository](https://github.com/new), name the repository `strangertalk`, choose **Private**, select **Add a README file**, and create it. Private protects signing operations and avoids accidental sharing of project settings. Private Actions has an included usage quota.
 3. Open the repository, tap **Code → Codespaces → Create codespace on main**. This runs a temporary computer in your browser, not on a laptop. Use a 2-core machine. If this is difficult on a phone, request Desktop site and rotate your phone.
-4. In Codespaces' file explorer, use the folder menu's **Upload…** to upload `StrangerTalk-source.zip`. If the first Codespace does not yet use the supplied Java feature, use **Command Palette → Codespaces: Rebuild Container** after extraction.
+4. In Codespaces' file explorer, use the folder menu's **Upload…** to upload `StrangerTalk-source.zip`. If the assistant already uploaded the source for you, skip the ZIP upload and extraction. The workspace uses a lightweight Ubuntu image; the setup script installs missing configuration/signing tools automatically. Android builds run in GitHub Actions. If an older configuration leaves the workspace in recovery mode, run `git pull --ff-only`, then use **Command Palette → Codespaces: Rebuild Container**.
 5. Open **Terminal → New Terminal**, paste this short command, and press Enter:
 
    ```sh
