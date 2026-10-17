@@ -49,7 +49,7 @@ Use Chrome's **⋮ → Desktop site** when a dashboard hides an option. The assi
 
    The ZIP contains the project files directly, including `.github` and `.devcontainer`. It replaces the initial README. You never need to edit the source.
 
-6. Run the following command and answer its short prompts with your project URL, public key, and monitored support email:
+6. Run the following command. This project's public URL and publishable key are already saved in `scripts/project-config.json`, so they do not need to be pasted again. These are public client settings, not administrator credentials. The script only asks for them if the public config file is absent and environment values were not supplied. A support email is optional and is not requested by the setup script:
 
    ```sh
    bash scripts/phone-setup.sh
@@ -95,7 +95,7 @@ For a small two-person private test, CAPTCHA can remain off; Supabase still appl
 
 ## Owner safety operations
 
-The support address supplied during setup appears in the app's policy and safety screens. You must monitor it. Reporting stores a record; it does **not** send an email or promise a review time. This is not a staffed moderation service.
+An optional `VITE_SUPPORT_EMAIL` repository variable appears in the app's policy and safety screens when supplied. If no address is supplied, email contact is omitted and the app explains that reports use the in-chat controls. Reporting stores a record; it does **not** send an email or promise a review time. The operator reviews reports in Supabase. This is not a staffed moderation service.
 
 In Supabase's Table Editor, use the schema dropdown to open **private → user_reports**. Read the reason and limited evidence privately. Set `reviewed_at` when reviewed. Only project administrators should access this area. Avoid copying evidence into public issues or logs. The public `profiles` table contains `banned_until`, which is protected from app clients.
 

@@ -4,13 +4,20 @@ cd "$(dirname "$0")/.."
 echo 'StrangerTalk phone setup. Keep this Codespace private.'
 source scripts/ensure-setup-tools.sh
 gh auth status >/dev/null 2>&1 || { echo 'Sign in first with: gh auth login --web'; exit 1; }
-read -r -p 'Paste your Supabase project URL: ' ST_URL
-read -r -p 'Paste your PUBLIC publishable key: ' ST_PUBLIC_KEY
-read -r -p 'Enter your monitored support email: ' ST_EMAIL
+ST_URL="${VITE_SUPABASE_URL:-}"
+ST_PUBLIC_KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-}"
+# Only public app settings belong in this optional JSON file; never admin credentials.
+if [ -f scripts/project-config.json ]; then
+  if [ -z "$ST_URL" ]; then ST_URL="$(node -p "JSON.parse(require('fs').readFileSync('scripts/project-config.json','utf8')).url || ''")"; fi
+  if [ -z "$ST_PUBLIC_KEY" ]; then ST_PUBLIC_KEY="$(node -p "JSON.parse(require('fs').readFileSync('scripts/project-config.json','utf8')).publishableKey || ''")"; fi
+fi
+if [ -z "$ST_URL" ]; then read -r -p 'Paste your Supabase project URL: ' ST_URL; fi
+if [ -z "$ST_PUBLIC_KEY" ]; then read -r -p 'Paste your PUBLIC publishable key: ' ST_PUBLIC_KEY; fi
+ST_EMAIL="${VITE_SUPPORT_EMAIL:-}"
 VITE_SUPABASE_URL="$ST_URL" VITE_SUPABASE_PUBLISHABLE_KEY="$ST_PUBLIC_KEY" VITE_SUPPORT_EMAIL="$ST_EMAIL" node scripts/check-config.mjs
 gh variable set VITE_SUPABASE_URL --body "$ST_URL"
 gh variable set VITE_SUPABASE_PUBLISHABLE_KEY --body "$ST_PUBLIC_KEY"
-gh variable set VITE_SUPPORT_EMAIL --body "$ST_EMAIL"
+if [ -n "$ST_EMAIL" ]; then gh variable set VITE_SUPPORT_EMAIL --body "$ST_EMAIL"; fi
 ST_SECRET_NAMES="$(gh secret list --json name --jq '.[].name')"
 if printf '%s\n' "$ST_SECRET_NAMES" | grep -qx ANDROID_KEYSTORE_BASE64; then
   for ST_REQUIRED in ANDROID_STORE_PASSWORD ANDROID_KEY_PASSWORD ANDROID_KEY_ALIAS; do
