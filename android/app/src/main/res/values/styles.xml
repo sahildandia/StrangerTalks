@@ -21,6 +21,10 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:background">#0F1020</item>
         <item name="windowSplashScreenBackground">#0F1020</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>

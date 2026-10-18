@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import android.content.Context;
 import android.content.ContentValues;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.MediaStore;
@@ -47,7 +48,10 @@ public class KeyboardLayoutTest {
     }
 
     private void screenshot(String name) throws Exception {
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        Thread.sleep(1000);
         Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        assertTrue("Status bar background matches the dark app", Color.luminance(bitmap.getPixel(bitmap.getWidth() / 2, 10)) < 0.15);
         // Shared emulator images survive Gradle's uninstall/cleanup of the app.
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.DISPLAY_NAME, name + ".png");
@@ -71,6 +75,13 @@ public class KeyboardLayoutTest {
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
                 assertTrue("Native action bar must be absent or hidden",
                     activity.get().getSupportActionBar() == null || !activity.get().getSupportActionBar().isShowing());
+                WebView webview = activity.get().getBridge().getWebView();
+                int[] position = new int[2];
+                webview.getLocationOnScreen(position);
+                WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(activity.get().getWindow().getDecorView());
+                assertNotNull(insets);
+                assertTrue("App begins immediately below the status bar without a title strip",
+                    Math.abs(position[1] - insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()).top) <= 4);
             });
             assertEquals("No duplicate web header", "0", js("document.querySelectorAll('.topbar').length"));
             screenshot("login");
