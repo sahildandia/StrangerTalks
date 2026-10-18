@@ -10,7 +10,7 @@ const storage = {
 };
 export const db = configured ? createClient(url!, key!, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage },
-  global: { fetch: (input, init) => fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(15000) }) }
+  global: { fetch: (input, init) => fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(45000) }) }
 }) : null;
 export const TERMS_VERSION = '2026-10-17';
 export function clientId() {
@@ -33,6 +33,6 @@ export async function rpc<T>(name: string, args: Record<string, unknown> = {}): 
 }
 export function friendlyError(error: unknown) {
   const raw = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
-  if (/fetch|network|timeout/i.test(raw)) return 'Connection interrupted. Check your internet and try again.';
+  if (/fetch|network|timeout|timed out|abort/i.test(raw)) return 'Connection timed out. Check your mobile signal or Wi-Fi, then try again.';
   return raw;
 }
