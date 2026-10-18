@@ -48,6 +48,7 @@ create or replace function private.gc_cleanup() returns void language plpgsql se
 begin
   perform private.gc_sweep();
   delete from public.gc_messages where created_at<now()-interval '24 hours';
+  update private.gc_reports r set evidence=(select coalesce(jsonb_agg(e),'[]'::jsonb) from jsonb_array_elements(r.evidence) e where (e->>'created_at')::timestamptz>now()-interval '24 hours');
   delete from private.gc_reports where expires_at<now();
 end;
 $$;

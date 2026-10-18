@@ -22,6 +22,8 @@ export async function rpc(name,args={}) {
   return {total:filtered.length,counts:{registered:users.filter(u=>!u.is_anonymous).length,guests:users.filter(u=>u.is_anonymous).length,banned:users.filter(u=>u.is_banned).length,total:users.length},users:filtered.slice(args.p_page*25,args.p_page*25+25)};
  }
  if(name==='gc_list')return [{id:'room-one',name:'College General',description:'Meet students from every department.',topic:'college',capacity:1000,member_count:4,college_name:colleges[0].name}];
+ if(name==='gc_join'||name==='gc_poll')return {state:'joined',room:{id:'room-one',name:'College General',description:'Meet students.',topic:'college'},members:[{user_id:own}],messages:window.__photos||[]};
+ if(name==='gc_send_image'){const m={id:'photo-one',room_id:args.p_room_id,sender_id:own,body:'Photo',image_data:args.p_image_data,created_at:new Date().toISOString()};window.__photos=[m];return m;}
  if(name==='gc_admin_list_rooms')return [];
  if(name==='ce_list'||name==='ce_my_events'||name==='ce_admin_events'||name==='cm_admin_college_requests')return [];
  return true;
@@ -104,3 +106,13 @@ test('phone selectors use themed options and accept a custom group member limit'
   expect(await page.locator('select').count()).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
 });
+
+ test('group photo sharing shows a compressed photo and retention notice',async({page})=>{
+  await openDashboard(page,false);
+  await page.getByRole('button',{name:'Group Chat Join communities'}).click();
+  await page.getByRole('button',{name:'Join College General'}).click();
+  await expect(page.getByText(/Messages and photos disappear after 24 hours/)).toBeVisible();
+  await page.getByLabel('Choose group photo').setInputFiles('deliverables/CampusMate-custom-member-limit.png');
+  await expect(page.getByAltText('Photo shared in the group')).toBeVisible();
+  await page.screenshot({path:'deliverables/CampusMate-group-photo.png',fullPage:true});
+ });
