@@ -7,6 +7,39 @@
 }
 /* Native content already excludes the system bars and keyboard. */
 :root.native-insets { --safe-top: 0px; --safe-bottom: 0px; --safe-left: 0px; --safe-right: 0px; }
+.themed-select-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-width:0; min-height:46px; padding:12px 14px; border:1px solid #ffffff20; border-radius:13px; background:#100c1c; color:#f7f1ff; font:inherit; font-size:14px; text-align:left; }
+.themed-select-trigger span { min-width:0; overflow-wrap:anywhere; line-height:1.45; }
+.themed-select-trigger svg { flex-shrink:0; color:#bd9ce8; }
+.themed-select-trigger:focus-visible { outline:2px solid #b66aff; outline-offset:2px; }
+.choice-backdrop { position:fixed; inset:0; z-index:1200; background:#030209bd; backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:20px; }
+.choice-panel { width:min(100%,440px); max-height:80dvh; display:flex; flex-direction:column; background:#151020; border:1px solid #bd6cfa55; border-radius:22px; color:#f8f3ff; box-shadow:0 24px 90px #0009; overflow:hidden; }
+.choice-panel header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 18px; border-bottom:1px solid #ffffff15; }
+.choice-panel h3 { font-size:16px; margin:0; }
+.choice-options { overflow-y:auto; overscroll-behavior:contain; padding:8px; }
+.choice-options button { display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%; border:0; border-radius:12px; padding:14px 13px; min-height:48px; background:transparent; color:inherit; text-align:left; font-size:14px; line-height:1.5; }
+.choice-options button svg { flex-shrink:0; color:#ce9bff; }
+.choice-options button.selected,.choice-options button:hover,.choice-options button:focus-visible { background:#8d4bd52e; outline:none; }
+.profile-college-locked { display:flex; align-items:center; gap:12px; padding:14px; border:1px solid #aa70db44; border-radius:13px; background:#20122d66; color:#eee2ff; font-size:13px; line-height:1.5; }
+.profile-college-locked svg { flex:0 0 auto; color:#c38cf0; }
+.profile-college-locked small,.profile-college-warning { display:block; color:#b0a0bf; font-size:11px; margin-top:5px; line-height:1.5; }
+.admin-users { display:flex; flex-direction:column; gap:18px; padding:20px; min-height:0; overflow-y:auto; overscroll-behavior:contain; background:#0e0b18; border:1px solid #ffffff16; border-radius:22px; }
+.admin-user-filters { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) auto; gap:10px; }
+.admin-user-list { display:flex; flex-direction:column; gap:9px; }
+.admin-user-row { display:flex; align-items:center; gap:12px; width:100%; padding:14px; border:1px solid #ffffff16; border-radius:15px; background:#181221; color:#f2edf8; text-align:left; }
+.admin-user-row>span:nth-child(2) { flex:1; min-width:0; }
+.admin-user-row strong,.admin-user-row small { display:block; overflow-wrap:anywhere; }
+.admin-user-row strong { font-size:13px; }.admin-user-row small { color:#b5a8c2; font-size:11px; line-height:1.5; margin-top:4px; }
+.admin-user-avatar { display:grid; place-items:center; flex:0 0 36px; height:36px; border-radius:12px; background:#9553d52a; color:#c491f0; }
+.account-status { font-size:10px; color:#94e4be; padding:5px 8px; background:#20634333; border-radius:8px; }.account-status.banned { color:#ff9aaf; background:#862c4233; }
+.admin-user-pagination { display:flex; align-items:center; justify-content:space-between; gap:8px; }.admin-user-pagination>span { font-size:11px; color:#b5a8c2; text-align:center; }
+.account-dialog-backdrop { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:18px; background:#030209c9; backdrop-filter:blur(6px); }
+.account-dialog { width:min(100%,520px); max-height:90dvh; overflow-y:auto; overscroll-behavior:contain; background:#161020; border:1px solid #b367ec55; border-radius:22px; padding:20px; color:#f3edf8; }
+.account-dialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; }.account-dialog h2 { font-size:20px; }
+.account-dialog dl { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0; }.account-dialog dl>div { min-width:0; }.account-dialog dt { font-size:11px; color:#b9a6c9; margin-bottom:4px; }.account-dialog dd { margin:0; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.account-action-form { display:flex; flex-direction:column; gap:10px; }.account-action-form p { font-size:12px; line-height:1.7; color:#c2b5ce; }.account-action-form label { font-size:12px; }.account-action-form input,.account-action-form textarea { width:100%; border:1px solid #ffffff25; border-radius:12px; background:#0c0813; color:white; padding:12px; font-size:16px; }.account-action-form textarea { min-height:80px; resize:vertical; }
+.account-action-buttons { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; flex-wrap:wrap; }.button.danger { color:#ffb1bf; background:#721a3544; border:1px solid #fa658b55; }
+.admin-event-college-filter { margin:12px 0; max-width:460px; }
+@media(max-width:600px) { .admin-users { padding:14px; }.admin-user-filters { grid-template-columns:1fr 1fr; }.admin-user-filters>.events-search { grid-column:1/-1; }.admin-user-row { padding:11px; gap:8px; }.admin-user-avatar { display:none; }.admin-user-pagination .button { padding:8px 10px; font-size:11px; }.account-dialog dl { grid-template-columns:1fr; }.choice-panel { max-height:75dvh; }.choice-backdrop { align-items:flex-end; padding:12px 12px max(12px,var(--safe-bottom)); }.college-admin-tabs { flex-wrap:wrap; } }
 html, body, #root { width: 100%; height: 100%; min-height: 0; overflow: hidden; overscroll-behavior: none; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--bg); }

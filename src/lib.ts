@@ -24,6 +24,7 @@ export type Snapshot = { state: 'idle' | 'waiting' | 'chat'; session: ChatSessio
 export type GroupRoom = { id: string; name: string; description: string; topic: string; capacity: number; member_count: number; status?: 'pending'|'approved'|'rejected'|'disabled'; college_id?: string|null; college_name?: string|null; created_at?: string; review_note?: string|null; last_message?: string | null; last_message_at?: string | null };
 export type GroupMessage = Omit<Message, 'session_id'> & { room_id: string };
 export type GroupMember = { user_id: string; typing_until: string | null };
+export type AccountProfile = { id: string; display_name: string; college_id: string | null; college_name: string | null; college_locked: boolean; is_admin: boolean };
 export type GroupSnapshot = { state: 'joined'; room: GroupRoom; members: GroupMember[]; messages: GroupMessage[] } | { state: 'left' };
 export async function rpc<T>(name: string, args: Record<string, unknown> = {}): Promise<T> {
   if (!db) throw new Error('Connect your Supabase project before starting a chat.');

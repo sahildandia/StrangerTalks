@@ -13,7 +13,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
     await pool.query(`drop schema if exists private cascade; drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists storage cascade;
       drop publication if exists supabase_realtime; create schema public; create schema auth;
       do $$ begin if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
-      if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if; end $$;
+      if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if; if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role nologin; end if; end $$;
       grant usage on schema public,auth to authenticated,anon;
       create schema storage;
       grant usage on schema storage to authenticated,anon;
@@ -21,7 +21,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text not null,name text not null,owner_id text);
       alter table storage.objects enable row level security;
       grant select,insert,delete on storage.objects to authenticated;
-      create table auth.users(id uuid primary key, is_anonymous boolean default true, raw_user_meta_data jsonb not null default '{}'::jsonb, created_at timestamptz default now(),last_sign_in_at timestamptz default now());
+      create table auth.users(id uuid primary key, is_anonymous boolean default true, email text, banned_until timestamptz, raw_user_meta_data jsonb not null default '{}'::jsonb, created_at timestamptz default now(),last_sign_in_at timestamptz default now());
       create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
       create publication supabase_realtime;`);
     await pool.query(await readFile(new URL('../supabase/migrations/202610170001_strangertalk.sql',import.meta.url),'utf8'));
@@ -33,6 +33,8 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
     await pool.query(await readFile(new URL('../supabase/migrations/202610180005_refresh_postgrest_college_schema.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180006_group_approval.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180007_chat_privacy_fixes.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180008_account_management.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180009_admin_college_groups.sql',import.meta.url),'utf8'));
     await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
     const makeUser = async (college='Test University') => {
       const user = {id:randomUUID(),client:randomUUID(),college};
@@ -137,9 +139,9 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       assert.ok([sameCollege.session.user_a,sameCollege.session.user_b].includes(a.id));
       assert.ok(![sameCollege.session.user_a,sameCollege.session.user_b].includes(b.id));
       const otherCollege=(await pool.query("select id from private.colleges where name='Other University'")).rows[0].id;
-      await call(a,'cm_set_my_college',[otherCollege]);
-      assert.equal((await pool.query('select count(*) from private.active_members where session_id=$1',[sameCollege.session.id])).rows[0].count,'0');
-      assert.equal((await pool.query('select college_id from public.profiles where id=$1',[a.id])).rows[0].college_id,otherCollege);
+      await assert.rejects(call(a,'cm_set_my_college',[otherCollege]),/cannot be changed/);
+      assert.equal((await pool.query('select count(*) from private.active_members where session_id=$1',[sameCollege.session.id])).rows[0].count,'2');
+      assert.notEqual((await pool.query('select college_id from public.profiles where id=$1',[a.id])).rows[0].college_id,otherCollege);
     });
     await t.test('report evidence is limited and block prevents re-pairing in either direction',async () => {
       await reset(); a=await makeUser(); b=await makeUser(); await enroll(a); await enroll(b);
@@ -220,6 +222,72 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       await assert.rejects(call(student,'ce_review',[submitted.id,'rejected',null]),/Admin access required/);
       await resetRates(student);
       await assert.rejects(call(student,'ce_submit',['Unsafe link','Department','Technical',new Date(Date.now()+86400000*2).toISOString().slice(0,10),'09:00','10:00','Main Block','A campus technology festival with talks, workshops, and student projects.','javascript:alert(1)',poster,'intra_college']),/secure registration link/);
+    });
+    await t.test('college is selected once, including concurrent saves and direct update attempts',async () => {
+      await reset(); const user=await makeUser(''); await enroll(user);
+      const colleges=(await pool.query('select id from private.colleges where is_active order by name')).rows.slice(0,2);
+      const attempts=await Promise.allSettled(colleges.map(college=>call(user,'cm_save_profile',['Student',college.id])));
+      assert.equal(attempts.filter(result=>result.status==='fulfilled').length,1);
+      const profile=await call(user,'cm_my_account'); assert.equal(profile.college_locked,true);
+      const other=colleges.find(college=>college.id!==profile.college_id);
+      await assert.rejects(call(user,'cm_set_my_college',[other.id]),/cannot be changed/);
+      await assert.rejects(pool.query('update public.profiles set college_id=$1 where id=$2',[other.id,user.id]),/cannot be changed/);
+      const saved=await call(user,'cm_save_profile',['Updated name',profile.college_id]);
+      assert.equal(saved.display_name,'Updated name'); assert.equal(saved.college_id,profile.college_id);
+      await assert.rejects(call(user,'cm_save_profile',['x'.repeat(61),profile.college_id]),/60 characters/);
+    });
+    await t.test('only admins can read the user directory or authorize account actions',async () => {
+      await reset(); const admin=await makeUser(''); const student=await makeUser(); const guest=await makeUser('Other University');
+      await enroll(admin); await enroll(student); await enroll(guest);
+      await pool.query("update auth.users set is_anonymous=false,email=case when id=$1 then 'admin@example.test' else 'student@example.test' end where id in($1,$2)",[admin.id,student.id]);
+      await pool.query('insert into private.event_admins(user_id) values($1)',[admin.id]);
+      const profile=await call(admin,'cm_my_account'); assert.equal(profile.is_admin,true); assert.equal(profile.college_id,null);
+      await call(admin,'cm_save_profile',['Administrator',null]);
+      await assert.rejects(call(student,'cm_admin_users'),/Admin access required/);
+      await assert.rejects(asUser(student,'select * from private.cm_account_actions'),/permission denied/);
+      await assert.rejects(call(student,'cm_admin_check_user_action',[guest.id,'ban','Reviewed report']),/Admin access required/);
+      await assert.rejects(call(admin,'cm_admin_check_user_action',[admin.id,'delete','Reviewed report']),/own account/);
+      await assert.rejects(asUser(admin,"select public.cm_admin_record_user_action($1,$2,'ban','Denied')",[admin.id,student.id]),/permission denied/);
+      const directory=await call(admin,'cm_admin_users');
+      assert.equal(directory.counts.registered,2); assert.equal(directory.counts.guests,1); assert.equal(directory.total,3);
+      assert.equal((await call(admin,'cm_admin_users',['student@example.test',null,'registered',0,25])).users[0].id,student.id);
+      const college=(await call(student,'cm_my_account')).college_id;
+      assert.equal((await call(admin,'cm_admin_users',['',college,'all',0,25])).total,1);
+      assert.equal((await call(admin,'cm_admin_check_user_action',[student.id,'ban','Reviewed report'])).actor_id,admin.id);
+      await pool.query('insert into private.event_admins(user_id) values($1)',[student.id]);
+      await assert.rejects(call(admin,'cm_admin_check_user_action',[student.id,'ban','Reviewed report']),/protected/);
+    });
+    await t.test('Auth bans disconnect group access and reactivation also clears legacy profile bans',async () => {
+      await reset(); const user=await makeUser(); await enroll(user);
+      const room=(await call(user,'gc_list'))[0]; await call(user,'gc_join',[room.id]);
+      await pool.query("update auth.users set banned_until=now()+interval '100 years' where id=$1",[user.id]);
+      assert.equal((await pool.query('select count(*) from private.gc_members where user_id=$1',[user.id])).rows[0].count,'0');
+      await assert.rejects(call(user,'st_heartbeat'),/restricted/);
+      await pool.query('update auth.users set banned_until=null where id=$1',[user.id]);
+      assert.equal((await call(user,'cm_my_account')).id,user.id);
+      await pool.query("select private.st_moderate($1,24,'Legacy ban')",[user.id]);
+      await pool.query('update auth.users set banned_until=null where id=$1',[user.id]);
+      assert.equal((await pool.query('select banned_until from public.profiles where id=$1',[user.id])).rows[0].banned_until,null);
+    });
+    await t.test('admin with no college can join and moderate all colleges; group capacity stops at 1000',async () => {
+      await reset(); const admin=await makeUser(''); const student=await makeUser(); const outsider=await makeUser('Other University');
+      await enroll(admin); await enroll(student); await enroll(outsider);
+      await pool.query('insert into private.event_admins(user_id) values($1)',[admin.id]);
+      const rooms=await call(admin,'gc_list'); assert.ok(new Set(rooms.map(room=>room.college_id)).size>=2);
+      const otherRoom=(await call(outsider,'gc_list'))[0];
+      await call(admin,'gc_join',[otherRoom.id]);
+      const message=await call(admin,'gc_send',[otherRoom.id,'Admin campus announcement',randomUUID()]);
+      assert.equal((await call(admin,'gc_poll',[otherRoom.id])).state,'joined');
+      assert.equal((await asUser(admin,'select public.gc_can_read($1,$2) as allowed',[otherRoom.id,message.created_at])).rows[0].allowed,true);
+      await assert.rejects(call(student,'gc_join',[otherRoom.id]),/not available/);
+      const pending=await call(student,'gc_submit_room',['Campus Network','A community for campus students.','general',1000]);
+      assert.equal(pending.status,'pending');
+      await assert.rejects(pool.query('update private.gc_rooms set capacity=1001 where id=$1',[pending.id]),/check constraint/);
+      await call(admin,'gc_admin_review_room',[pending.id,'approved',null]);
+      const approved=(await call(student,'gc_list')).find(room=>room.id===pending.id); assert.equal(approved.capacity,1000);
+      await resetRates(student); await assert.rejects(call(student,'gc_submit_room',['Too Large Group','A community for campus students.','general',1001]),/member limit/);
+      await pool.query('delete from auth.users where id=$1',[outsider.id]);
+      assert.equal((await pool.query('select count(*) from public.profiles where id=$1',[outsider.id])).rows[0].count,'0');
     });
   } finally { await pool.end(); }
 });

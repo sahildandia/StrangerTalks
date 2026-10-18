@@ -24,3 +24,4 @@ jobs:
           test -n "$SUPABASE_ACCESS_TOKEN" && test -n "$SUPABASE_DB_PASSWORD" && test -n "$SUPABASE_PROJECT_ID" || { echo 'Run scripts/backend-setup.sh first.'; exit 1; }
       - run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
       - run: supabase db push --yes
+      - run: supabase functions deploy admin-users --project-ref "$SUPABASE_PROJECT_ID"

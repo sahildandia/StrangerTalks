@@ -15,3 +15,7 @@ enable_anonymous_sign_ins = true
 [auth.rate_limit]
 anonymous_users = 30
 
+# The function validates the bearer token with Auth and checks the admin role.
+[functions.admin-users]
+verify_jwt = false
+
