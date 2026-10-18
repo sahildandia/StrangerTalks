@@ -1,5 +1,5 @@
 import { ArrowRight, Eye, EyeOff, GraduationCap, LockKeyhole, Mail } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import Captcha from './Captcha';
 import { friendlyError, rpc } from './lib';
 import CollegePicker, { type CollegeOption } from './CollegePicker';
@@ -18,7 +18,13 @@ export default function AuthScreen(props: Props) {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [showPassword, setShowPassword] = useState(false);
   const [colleges,setColleges]=useState<CollegeOption[]>([]); const [collegeId,setCollegeId]=useState(''); const [collegeLoading,setCollegeLoading]=useState(false);
   const [requestName,setRequestName]=useState(''); const [requestBusy,setRequestBusy]=useState(false); const [collegeMessage,setCollegeMessage]=useState('');
-  useEffect(()=>{if(props.mode!=='register')return;let active=true;setCollegeLoading(true);void rpc<CollegeOption[]>('cm_list_colleges').then(data=>{if(active)setColleges(Array.isArray(data)?data:[]);}).catch(error=>{if(active)setCollegeMessage(`College list is unavailable: ${friendlyError(error)}`);}).finally(()=>{if(active)setCollegeLoading(false);});return()=>{active=false;};},[props.mode]);
+  const loadColleges=useCallback(async()=>{
+    setCollegeLoading(true);setCollegeMessage('');
+    try { const data=await rpc<CollegeOption[]>('cm_list_colleges');setColleges(Array.isArray(data)?data:[]); }
+    catch(error){setCollegeMessage(`College list is unavailable: ${friendlyError(error)}`);}
+    finally{setCollegeLoading(false);}
+  },[]);
+  useEffect(()=>{if(props.mode==='register'&&props.online)void loadColleges();},[props.mode,props.online,loadColleges]);
   const selectedCollege=colleges.find(item=>item.id===collegeId)?.name??'';
   function submit(event: FormEvent) { event.preventDefault(); props.onAuth(email.trim(), password, props.mode, selectedCollege); }
   async function requestCollege(){setCollegeMessage('');setRequestBusy(true);try{await rpc('cm_request_college',{p_name:requestName});setCollegeMessage('Request sent for admin review. You can select the college after it is approved.');setRequestName('');}catch(error){setCollegeMessage(friendlyError(error));}finally{setRequestBusy(false);}}
@@ -31,17 +37,17 @@ export default function AuthScreen(props: Props) {
       <form className="auth-form" onSubmit={submit}>
         <label htmlFor="auth-email">College or personal email</label><div className="auth-input-wrap"><Mail size={17}/><input id="auth-email" type="email" autoComplete="email" placeholder="you@college.edu" value={email} onChange={e=>setEmail(e.target.value)} required maxLength={254}/></div>
         <label htmlFor="auth-password">Password</label><div className="auth-input-wrap"><LockKeyhole size={17}/><input id="auth-password" type={showPassword?'text':'password'} autoComplete={props.mode==='register'?'new-password':'current-password'} placeholder={props.mode==='register'?'At least 8 characters':'Your password'} value={password} onChange={e=>setPassword(e.target.value)} required minLength={8} maxLength={72}/><button type="button" className="password-toggle" aria-label={showPassword?'Hide password':'Show password'} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div>
-        {props.mode==='register'?<div className="college-registration"><label id="auth-college-label">Your college</label><CollegePicker id="auth-college" label="Your college" colleges={colleges} value={collegeId} loading={collegeLoading} onChange={setCollegeId}/><small className="profile-college-warning">Choose carefully. Your college cannot be changed after registration.</small><input type="hidden" name="college_id" value={collegeId}/><div className="college-request"><label htmlFor="college-request-name">Can’t find your college?</label><div><input id="college-request-name" value={requestName} maxLength={120} placeholder="Enter college name" onChange={e=>setRequestName(e.target.value)}/><button className="button secondary" type="button" disabled={!requestName.trim()||requestBusy||!props.online} onClick={()=>void requestCollege()}>{requestBusy?'Sending…':'Request'}</button></div>{collegeMessage?<p role="status">{collegeMessage}</p>:null}</div></div>:null}
+        {props.mode==='register'?<div className="college-registration"><label id="auth-college-label">Your college</label><CollegePicker id="auth-college" label="Your college" colleges={colleges} value={collegeId} loading={collegeLoading} onChange={setCollegeId}/><small className="profile-college-warning">Choose carefully. Your college cannot be changed after registration.</small><input type="hidden" name="college_id" value={collegeId}/><div className="college-request"><label htmlFor="college-request-name">Canâ€™t find your college?</label><div><input id="college-request-name" value={requestName} maxLength={120} placeholder="Enter college name" onChange={e=>setRequestName(e.target.value)}/><button className="button secondary" type="button" disabled={!requestName.trim()||requestBusy||!props.online} onClick={()=>void requestCollege()}>{requestBusy?'Sendingâ€¦':'Request'}</button></div>{collegeMessage?<p role="status">{collegeMessage}{collegeMessage.startsWith('College list is unavailable:')?<button type="button" className="text-button" disabled={collegeLoading||!props.online} onClick={()=>void loadColleges()}>{collegeLoading?'Loading…':' Retry'}</button>:null}</p>:null}</div></div>:null}
         {props.mode==='register'?<p className="auth-hint">Use 8 or more characters. Your email is used to sign in.</p>:null}
         <label className="auth-consent"><input type="checkbox" checked={props.adult} onChange={e=>props.onAdultChange(e.target.checked)}/><span>I confirm that I am <strong>18 or older</strong>.</span></label>
         <label className="auth-consent"><input type="checkbox" checked={props.consent} onChange={e=>props.onConsentChange(e.target.checked)}/><span>I agree to the <button type="button" className="text-button" onClick={props.onGuidelines}>Community Guidelines</button> and <button type="button" className="text-button" onClick={props.onPrivacy}>Privacy Policy</button>.</span></label>
         {props.needsCaptcha?<Captcha key={props.captchaKey} onToken={props.onCaptcha}/>:null}
-        <button className="button primary auth-submit" type="submit" disabled={!enabled}>{props.busy?'Please wait…':props.mode==='login'?'Log in with email':'Create account'}<ArrowRight size={18}/></button>
+        <button className="button primary auth-submit" type="submit" disabled={!enabled}>{props.busy?'Please waitâ€¦':props.mode==='login'?'Log in with email':'Create account'}<ArrowRight size={18}/></button>
       </form>
       <div className="auth-divider"><span/>OR<span/></div>
-      <button className="button guest-button" disabled={props.busy||!props.online||!props.adult||!props.consent||(props.needsCaptcha&&!props.captchaToken)} onClick={props.onGuest}><GraduationCap size={19}/>{props.busy?'Starting guest session…':'Continue as Guest'}<ArrowRight size={18}/></button>
+      <button className="button guest-button" disabled={props.busy||!props.online||!props.adult||!props.consent||(props.needsCaptcha&&!props.captchaToken)} onClick={props.onGuest}><GraduationCap size={19}/>{props.busy?'Starting guest sessionâ€¦':'Continue as Guest'}<ArrowRight size={18}/></button>
       <p className="auth-privacy"><LockKeyhole size={13}/> Guest mode needs no email, phone, or password.</p>
     </div>
-    <p className="auth-footer">18+ only <span>·</span> Be kind. Stay safe.</p>
+    <p className="auth-footer">18+ only <span>Â·</span> Be kind. Stay safe.</p>
   </section>;
 }

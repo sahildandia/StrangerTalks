@@ -10,7 +10,17 @@ const storage = {
 };
 export const db = configured ? createClient(url!, key!, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage },
-  global: { fetch: (input, init) => fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(45000) }) }
+  global: { fetch: (input, init) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
+    const abort = () => controller.abort();
+    if (init?.signal?.aborted) abort();
+    else init?.signal?.addEventListener('abort', abort, { once: true });
+    return fetch(input, { ...init, signal: controller.signal }).finally(() => {
+      window.clearTimeout(timeout);
+      init?.signal?.removeEventListener('abort', abort);
+    });
+  } }
 }) : null;
 export const TERMS_VERSION = '2026-10-17';
 export function clientId() {
