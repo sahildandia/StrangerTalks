@@ -81,7 +81,7 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" apk/StrangerTalk-release.apk --clobber
           else
-            gh release create "$TAG" apk/StrangerTalk-release.apk --verify-tag --title "StrangerTalk $VERSION" --notes "Anonymous login, one-to-one Random Chat, and live Group Chat rooms."
+            gh release create "$TAG" apk/StrangerTalk-release.apk --title "StrangerTalk $VERSION" --notes "Anonymous login, one-to-one Random Chat, and live Group Chat rooms."
           fi
       - uses: actions/upload-artifact@v4
         with:
