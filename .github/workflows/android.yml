@@ -60,7 +60,7 @@ jobs:
           disable-animations: true
           script: |
             adb shell settings put secure show_ime_with_hard_keyboard 1
-            cd android && ./gradlew connectedDebugAndroidTest --no-daemon; result=$?; adb pull /sdcard/Android/data/app.strangertalk.chat/files/ui-checks ../native-ui-screenshots || true; exit "$result"
+            cd android && ./gradlew :app:connectedDebugAndroidTest --no-daemon; result=$?; adb pull /sdcard/Pictures/CampusMateCheck ../native-ui-screenshots || true; exit "$result"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

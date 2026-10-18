@@ -3,8 +3,11 @@ package app.strangertalk.chat;
 import static org.junit.Assert.*;
 
 import android.content.Context;
+import android.content.ContentValues;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.net.Uri;
+import android.provider.MediaStore;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
 import androidx.core.view.ViewCompat;
@@ -12,8 +15,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,9 +48,14 @@ public class KeyboardLayoutTest {
 
     private void screenshot(String name) throws Exception {
         Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
-        File directory = activity.get().getExternalFilesDir("ui-checks");
-        directory.mkdirs();
-        try (FileOutputStream output = new FileOutputStream(new File(directory, name + ".png"))) {
+        // Shared emulator images survive Gradle's uninstall/cleanup of the app.
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, name + ".png");
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CampusMateCheck");
+        Uri uri = activity.get().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        assertNotNull(uri);
+        try (OutputStream output = activity.get().getContentResolver().openOutputStream(uri)) {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
         }
         bitmap.recycle();
@@ -97,6 +104,7 @@ public class KeyboardLayoutTest {
                         Math.abs(position[1] + webview.getHeight() - visibleFrame.bottom) <= 4);
                 });
                 awaitJS("Math.abs(document.querySelector('.auth-screen').getBoundingClientRect().bottom-innerHeight)<3");
+                awaitJS("document.activeElement.getBoundingClientRect().top>=0 && document.activeElement.getBoundingClientRect().bottom<=innerHeight");
                 screenshot(selector.contains("email") ? "email-keyboard" : "password-keyboard");
             }
         }

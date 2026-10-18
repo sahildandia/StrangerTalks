@@ -16,9 +16,10 @@ export function useViewport() {
       // blank panel above the keyboard.
       const height = native ? window.innerHeight : Math.min(window.innerHeight, viewport?.height ?? window.innerHeight);
       document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`);
+      if (native) keepFocusedInputVisible();
     };
     let focusTimer = 0;
-    const keepFocusedInputVisible = () => {
+    function keepFocusedInputVisible() {
       if (!native) return;
       window.clearTimeout(focusTimer);
       focusTimer = window.setTimeout(() => {
@@ -37,7 +38,7 @@ export function useViewport() {
           else if (input.top < viewport.top + 12) scroller.scrollTop -= viewport.top + 12 - input.top;
         }
       }, 280);
-    };
+    }
     update();
     window.addEventListener('resize', update);
     viewport?.addEventListener('resize', update);
