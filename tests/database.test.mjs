@@ -55,7 +55,10 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       if (college) await call(u,'cm_set_my_college',[college.id]);
       return session;
     };
-    const reset = async () => { await pool.query('truncate auth.users cascade; truncate private.user_reports,private.moderation_actions'); };
+    const reset = async () => {
+      await pool.query('truncate auth.users cascade; truncate private.user_reports,private.moderation_actions');
+      await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
+    };
     const resetRates = async u => pool.query('delete from private.rate_limits where user_id=$1',[u.id]);
     let a,b,c,sid;
     await t.test('anonymous identity requires adult consent and correct policy',async () => {
