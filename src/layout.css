@@ -644,6 +644,8 @@ button { -webkit-user-select: none; user-select: none; }
 .settings-guest-note { padding:12px; border:1px dashed var(--line); border-radius:11px; margin:5px 0 10px; }
 
 .campus-events-screen { flex:1; min-height:0; width:min(100%,900px); margin:0 auto; padding:0 26px 16px; display:flex; flex-direction:column; overflow:hidden; color:#f8f5ff; }
+.campus-events-screen.is-submitting > :not(.events-page-header):not(.events-feedback):not(.event-submit-form) { display:none!important; }
+.campus-events-screen.is-submitting .event-submit-form { flex:1 1 0; max-height:none; margin:12px 0 0; overscroll-behavior:contain; }
 .events-page-header { display:flex; align-items:center; flex:0 0 auto; gap:11px; min-height:62px; padding:3px 0 12px; border-bottom:1px solid #ffffff13; }
 .events-page-header>.icon-button { width:42px; height:42px; border:1px solid #ffffff17; background:#171421; }
 .events-page-header h1 { margin-top:3px; font-size:19px; letter-spacing:-.4px; }
