@@ -230,6 +230,7 @@ button { -webkit-user-select: none; user-select: none; }
 .college-picker-search { min-height:44px; display:flex; align-items:center; gap:9px; padding:0 11px; border:1px solid #ffffff22; border-radius:10px; color:#d09aff; background:#0b0a12; }
 .college-picker-search:focus-within { border-color:#c36aff88; box-shadow:0 0 0 3px #c948ff12; }
 .college-picker-search input { width:100%; min-width:0; height:42px; border:0; outline:0; color:#fff; background:transparent; font-size:14px; }
+.profile-form .college-picker-search input { border:0; border-radius:0; outline:0; box-shadow:none; background:transparent; appearance:none; -webkit-appearance:none; }
 .college-picker-search input:focus-visible { outline:0; }
 .college-picker-options { max-height:min(190px,28dvh); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
 .college-picker-options button { width:100%; min-height:46px; display:flex; align-items:center; padding:9px 11px; border-bottom:1px solid #ffffff0c; border-radius:8px; color:#f0eaf8; background:transparent; font-size:13px; line-height:1.45; text-align:left; }
