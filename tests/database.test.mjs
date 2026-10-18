@@ -56,7 +56,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       return session;
     };
     const reset = async () => {
-      await pool.query('truncate auth.users cascade; truncate private.user_reports,private.moderation_actions');
+      await pool.query('delete from auth.users; truncate private.user_reports,private.moderation_actions');
       await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
     };
     const resetRates = async u => pool.query('delete from private.rate_limits where user_id=$1',[u.id]);
@@ -212,6 +212,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       assert.equal((await asUser(admin,'select public.ce_can_read_poster($1) as allowed',[poster])).rows[0].allowed,true);
       const interPoster=`${student.id}/${randomUUID()}.png`;
       await pool.query("insert into storage.objects(bucket_id,name,owner_id) values('event-posters',$1,$2)",[interPoster,student.id]);
+      await resetRates(student);
       const inter=await call(student,'ce_submit',['Inter Campus Meetup','Student Union','Social',new Date(Date.now()+86400000*3).toISOString().slice(0,10),'10:00','12:00','Main Block','A campus-wide student meetup for communities and networking.','https://example.org/inter',interPoster,'inter_college']);
       await call(admin,'ce_review',[inter.id,'approved',null]);
       assert.equal((await asUser(outsider,'select * from public.ce_list($1)',[outsider.client])).rows.length,1);
