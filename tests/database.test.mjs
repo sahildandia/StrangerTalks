@@ -30,9 +30,12 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
     await pool.query(await readFile(new URL('../supabase/migrations/202610180002_campus_events.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180003_college_directory.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180004_college_scopes.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180005_refresh_postgrest_college_schema.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180006_group_approval.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180007_next_clears_skipped_messages.sql',import.meta.url),'utf8'));
     await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
     const makeUser = async (college='Test University') => {
-      const user = {id:randomUUID(),client:randomUUID()};
+      const user = {id:randomUUID(),client:randomUUID(),college};
       await pool.query('insert into auth.users(id,raw_user_meta_data) values($1,jsonb_build_object(\'college_name\',$2::text))',[user.id,college]);
       return user;
     };
@@ -46,7 +49,12 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       finally { connection.release(); }
     };
     const call = async (u,name,values=[]) => (await asUser(u,`select to_jsonb(public.${name}(${[u.client,...values].map((_,i)=>'$'+(i+1)).join(',')})) as result`,[u.client,...values])).rows[0].result;
-    const enroll = async u => call(u,'st_begin',[true,'2026-10-17']);
+    const enroll = async u => {
+      const session=await call(u,'st_begin',[true,'2026-10-17']);
+      const college=(await pool.query('select id from private.colleges where name=$1 and is_active',[u.college])).rows[0];
+      if (college) await call(u,'cm_set_my_college',[college.id]);
+      return session;
+    };
     const reset = async () => { await pool.query('truncate auth.users cascade; truncate private.user_reports,private.moderation_actions'); };
     const resetRates = async u => pool.query('delete from private.rate_limits where user_id=$1',[u.id]);
     let a,b,c,sid;
