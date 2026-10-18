@@ -172,7 +172,7 @@ button { -webkit-user-select: none; user-select: none; }
 .screen-onboarding .sidebar, .screen-home .sidebar, .screen-dashboard .sidebar { display: none; }
 .screen-onboarding, .screen-home, .screen-dashboard { display: flex; grid-template-columns: 1fr; }
 .screen-onboarding .main-panel, .screen-home .main-panel, .screen-dashboard .main-panel { width: 100%; min-height: 0; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); background: #090713; }
-.screen-onboarding .topbar, .screen-home .topbar, .screen-dashboard .topbar { display: none; }
+.screen-onboarding .topbar, .screen-home .topbar { display: none; }
 .screen-onboarding .bottom-bar, .screen-home .bottom-bar, .screen-dashboard .bottom-bar { display: none; }
 .screen-onboarding .feedback, .screen-home .feedback { position: relative; z-index: 3; flex-shrink: 0; margin: 8px 16px 0; }
 .campus-logo { position: relative; display: grid; place-items: center; width: 52px; height: 52px; flex: 0 0 auto; border-radius: 17px; color: #fff; background: linear-gradient(145deg,#d134ff,#7843ff 55%,#3459f5); box-shadow: 0 0 28px #a926f888; }
@@ -383,8 +383,8 @@ button { -webkit-user-select: none; user-select: none; }
 .chat-nav-dot { position: absolute; top: 5px; right: calc(50% - 17px); width: 7px; height: 7px; border-radius: 50%; background: #54dda2; box-shadow: 0 0 8px #54dda288; }
 .campus-splash { justify-content: center; gap: 13px; position: relative; overflow: hidden; background: linear-gradient(180deg,#080713b9,#10071a77 55%,#080713dc),url('/campus-dusk.webp') center 60%/cover; }
 .campus-splash::after { content:""; position:absolute; bottom:12%; width:150px; height:4px; border-radius:10px; background:linear-gradient(90deg,#c43bfa,#6357f5); box-shadow:0 0 16px #bc42ffb5; animation:splash-load 1.1s ease-out both; }
-.campus-splash .campus-brand-art { width:min(68vw,250px); aspect-ratio:1; overflow:hidden; border:1px solid #a85dff60; border-radius:28%; background:#080713; box-shadow:0 0 55px #9d37ff55; }
-.campus-splash .campus-brand-art img { display:block; width:100%; height:100%; object-fit:cover; }
+.campus-splash .brand-icon { width:80px; height:80px; border-radius:24px; box-shadow:0 0 38px #a926f888; }
+.campus-splash .brand-icon svg { width:46px; height:46px; }
 .campus-splash h1 { font-size:31px; text-shadow:0 2px 14px #000a; }
 .campus-splash h1 span { color:#df56ff; }
 .campus-splash p { color:#e8dff0; font-size:11px; }

@@ -344,7 +344,7 @@ export default function App() {
   const typing = !!typingUntil && new Date(typingUntil).getTime() > now && screen === 'chat';
   const broken = !online || !connected;
 
-  if (splash) return <div className="splash campus-splash"><span className="campus-brand-art"><img src="/campusmate-logo.png" alt="CampusMate"/></span><p>Your campus. Your community.</p><i className="splash-progress"/></div>;
+  if (splash) return <div className="splash campus-splash"><span className="brand-icon"><CampusMateLogo/></span><h1>Campus<span>Mate</span></h1><p>Your campus. Your community.</p><i className="splash-progress"/></div>;
   return <div className={`app-shell screen-${screen}`}>
     <aside className="sidebar">
       <a className="brand" href="#" onClick={e => { e.preventDefault(); if (screen === 'home') setModal(null); }}><span className="brand-icon"><CampusMateLogo/></span>CampusMate</a>
