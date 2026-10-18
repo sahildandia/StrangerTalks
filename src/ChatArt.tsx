@@ -6,4 +6,3 @@ export default function ChatArt({ group = false, compact = false }: { group?: bo
     <span className="art-spark">✦</span><span className="art-shadow"/>
   </div>;
 }
-

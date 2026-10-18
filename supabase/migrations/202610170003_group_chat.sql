@@ -191,4 +191,3 @@ grant execute on function public.gc_can_read(uuid,timestamptz),public.gc_list(uu
 alter publication supabase_realtime add table public.gc_messages;
 notify pgrst,'reload schema';
 commit;
-

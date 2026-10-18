@@ -21,7 +21,7 @@ export function clientId() {
 export type ChatSession = { id: string; user_a: string; user_b: string; created_at: string; ended_at: string | null; end_reason: string | null; typing_a_until: string | null; typing_b_until: string | null };
 export type Message = { id: string; session_id: string; sender_id: string; body: string; created_at: string; client_nonce: string };
 export type Snapshot = { state: 'idle' | 'waiting' | 'chat'; session: ChatSession | null };
-export type GroupRoom = { id: string; name: string; description: string; topic: string; capacity: number; member_count: number };
+export type GroupRoom = { id: string; name: string; description: string; topic: string; capacity: number; member_count: number; last_message?: string | null; last_message_at?: string | null };
 export type GroupMessage = Omit<Message, 'session_id'> & { room_id: string };
 export type GroupMember = { user_id: string; typing_until: string | null };
 export type GroupSnapshot = { state: 'joined'; room: GroupRoom; members: GroupMember[]; messages: GroupMessage[] } | { state: 'left' };
@@ -36,4 +36,3 @@ export function friendlyError(error: unknown) {
   if (/fetch|network|timeout/i.test(raw)) return 'Connection interrupted. Check your internet and try again.';
   return raw;
 }
-

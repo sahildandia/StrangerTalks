@@ -1,6 +1,6 @@
 {
-  "name": "strangertalk",
-  "version": "1.0.2",
+  "name": "campusmate",
+  "version": "1.0.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -47,4 +47,3 @@
     }
   }
 }
-

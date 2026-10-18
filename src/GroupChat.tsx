@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, Ban, Check, Flag, Gamepad2, Hash, LogOut, MessageCircle, Music2, Send, ShieldCheck, Sun, Users, WifiOff, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, Ban, BriefcaseBusiness, Check, Flag, Gamepad2, Hash, LogOut, MessageCircle, Music2, Search, Send, ShieldCheck, Sun, Users, WifiOff, X, BookOpen, Building2, CalendarDays, Laugh, Code2 } from 'lucide-react';
 import { db, friendlyError, rpc, type GroupMessage, type GroupRoom, type GroupSnapshot } from './lib';
 
 type Joined = Extract<GroupSnapshot, {state: 'joined'}>;
 type Dialog = 'members' | 'safety' | 'leave' | null;
 const alias = (id: string) => `Stranger ${id.slice(0, 6).toUpperCase()}`;
 const time = (date: string) => new Date(date).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-const topicIcon = (topic: string) => topic === 'music' ? <Music2/> : topic === 'gaming' ? <Gamepad2/> : topic === 'life' ? <Sun/> : <MessageCircle/>;
+const topicIcon = (topic: string) => topic === 'music' ? <Music2/> : topic === 'gaming' ? <Gamepad2/> : topic === 'life' ? <Sun/> : topic === 'department' ? <Code2/> : topic === 'college' ? <Building2/> : topic === 'career' ? <BriefcaseBusiness/> : topic === 'study' ? <BookOpen/> : topic === 'events' ? <CalendarDays/> : topic === 'social' ? <Laugh/> : <MessageCircle/>;
+const recentTime = (value?: string | null) => {
+  if (!value) return 'Be the first to say hello';
+  const minutes=Math.max(0,Math.floor((Date.now()-new Date(value).getTime())/60000));
+  return minutes<1?'Just now':minutes<60?`${minutes}m ago`:minutes<1440?`${Math.floor(minutes/60)}h ago`:'Yesterday';
+};
+const roomFilters=['All','My Groups','College','Department','Interests'] as const;
 
-export default function GroupChat({uid, onBack}: {uid: string; onBack: () => void}) {
+export default function GroupChat({uid, collegeName, onBack}: {uid: string; collegeName: string; onBack: () => void}) {
   const [rooms, setRooms] = useState<GroupRoom[]>([]);
+  const [search,setSearch]=useState(''); const [filter,setFilter]=useState<typeof roomFilters[number]>('All');
+  const [myRoomIds,setMyRoomIds]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('st-my-groups')??'[]')}catch{return []}});
   const [group, setGroup] = useState<Joined | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -34,6 +42,11 @@ export default function GroupChat({uid, onBack}: {uid: string; onBack: () => voi
   const pending = useRef<{room: string; body: string; nonce: string} | null>(null);
   const lastTyping = useRef(0);
   const blocked = !online || !connected;
+  const shownRooms=rooms.filter(room=>{
+    const matchesSearch=`${room.name} ${room.description} ${room.topic}`.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter=filter==='All'||(filter==='My Groups'&&myRoomIds.includes(room.id))||(filter==='College'&&['college','events'].includes(room.topic))||(filter==='Department'&&['department','career','study'].includes(room.topic))||(filter==='Interests'&&['general','music','gaming','life','social'].includes(room.topic));
+    return matchesSearch&&matchesFilter;
+  });
 
   const apply = useCallback((next: Joined | null) => { groupRef.current = next; setGroup(next); }, []);
   const refresh = useCallback(async () => {
@@ -122,6 +135,7 @@ export default function GroupChat({uid, onBack}: {uid: string; onBack: () => voi
       const snapshot = await rpc<GroupSnapshot>('gc_join', {p_room_id: room.id});
       if (!alive.current || snapshot.state !== 'joined') return;
       following.current = true; setUnread(false); setDraft(''); pending.current = null;
+      const recent=[room.id,...myRoomIds.filter(id=>id!==room.id)].slice(0,20);setMyRoomIds(recent);localStorage.setItem('st-my-groups',JSON.stringify(recent));
       apply(snapshot); setConnected(true); setNotice('');
     });
   }
@@ -167,11 +181,11 @@ export default function GroupChat({uid, onBack}: {uid: string; onBack: () => voi
   const typingCount = group?.members.filter(m => m.user_id !== uid && m.typing_until && new Date(m.typing_until).getTime()>now).length ?? 0;
   const targets = group ? [...new Set([...group.members.map(m => m.user_id), ...group.messages.map(m => m.sender_id)])].filter(id => id !== uid) : [];
   return <section className={`groups-screen ${group ? 'in-group' : ''}`} aria-label="Group Chat">
-    {!group ? <header className="groups-title"><button className="icon-button" aria-label="Back to dashboard" onClick={onBack}><ArrowLeft/></button><div><h1>Group Chat <span>GC</span></h1><p>A shared space. A fresh perspective.</p></div></header> : null}
+    {!group ? <header className="groups-title"><button className="icon-button" aria-label="Back to dashboard" onClick={onBack}><ArrowLeft/></button><div><h1>Group Chat</h1><p>Find your people and join the conversation.</p></div><span className="groups-title-action"><MessageCircle size={18}/></span></header> : null}
     {blocked ? <div className="network-banner" role="status"><WifiOff size={16}/>{!online ? 'You’re offline. Messages are paused.' : 'Reconnecting to groups…'}<button onClick={() => void refresh()}>Retry</button></div> : null}
     {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss group error" onClick={() => setError('')}><X size={16}/></button></div> : null}
     {notice ? <div className="feedback notice" role="status"><span>{notice}</span><button className="icon-button" aria-label="Dismiss group notification" onClick={() => setNotice('')}><X size={16}/></button></div> : null}
-    {!group ? <div className="room-list"><div className="room-intro"><span className="eyebrow">FIND YOUR PEOPLE</span><h2>Pick your corner.</h2><p>Real people, shared interests. Up to 20 per room.</p></div>{loading ? <p className="room-loading" role="status">Finding your groups…</p> : rooms.map(room => <article className={`room-card topic-${room.topic}`} key={room.id}><span className="room-icon">{topicIcon(room.topic)}</span><div><h3>{room.name}</h3><p>{room.description}</p><small><Users size={12}/>{room.member_count} / {room.capacity} here{room.member_count === 0 ? ' · Be the first to say hello' : ''}</small></div><button className="icon-button room-join" aria-label={`Join ${room.name}`} disabled={busy || !online || room.member_count>=room.capacity} onClick={() => join(room)}><ArrowRight size={21}/></button></article>)}<p className="room-footnote"><ShieldCheck size={15}/>Only messages sent while you’re here are visible.<br/>Your identity stays anonymous.</p></div> : <section className="chat-area group-conversation" aria-label="Group conversation"><header className="chat-heading"><button className="icon-button" aria-label="Leave group" disabled={busy || sending} onClick={() => setDialog('leave')}><ArrowLeft size={21}/></button><span className="room-icon">{topicIcon(group.room.topic)}</span><div><h2>{group.room.name}</h2><button className="text-button member-summary" onClick={() => setDialog('members')}><Users size={12}/>{group.members.length} members · View members</button></div><button className="icon-button" aria-label="Group safety options" onClick={() => setDialog('members')}><ShieldCheck size={21}/></button></header>
+    {!group ? <div className="room-list"><div className="room-intro"><span className="eyebrow">FIND YOUR PEOPLE</span><h2>Pick your corner.</h2><p>{collegeName?`Groups for ${collegeName} students.`:'Choose your college in Profile to see your campus groups.'}</p></div><label className="group-search"><Search size={16}/><input aria-label="Search groups" placeholder="Search groups…" value={search} onChange={e=>setSearch(e.target.value)}/></label><div className="group-filter-row" aria-label="Filter groups">{roomFilters.map(item=><button key={item} className={filter===item?'selected':''} onClick={()=>setFilter(item)}>{item}</button>)}</div>{loading ? <p className="room-loading" role="status">Finding your groups…</p> : shownRooms.map((room,index) => <article className={`room-card topic-${room.topic}`} key={room.id}><span className="room-icon"><span className="room-emoji">{topicIcon(room.topic)}</span></span><div className="room-card-copy"><div className="room-card-top"><h3>{room.name}</h3><time>{recentTime(room.last_message_at)}</time></div><p>{room.last_message||room.description}</p><small><Users size={12}/>{room.member_count} online <span>·</span> {room.capacity} max</small></div><button className="icon-button room-join" aria-label={`Join ${room.name}`} disabled={busy || !online || room.member_count>=room.capacity} onClick={() => join(room)}>{myRoomIds.includes(room.id)?<Check size={18}/>:<ArrowRight size={21}/>}</button>{index===0&&room.member_count>0?<i className="room-live-indicator" aria-label="Members are active"/>:null}</article>)}{!loading&&!shownRooms.length?<div className="room-no-results"><Users size={22}/><strong>{collegeName?'No groups found':'College selection needed'}</strong><small>{collegeName?'Try another search or group filter.':'Go to Profile, select your college, and save it to load its private group rooms.'}</small></div>:null}<p className="room-footnote"><ShieldCheck size={15}/>Only students assigned to {collegeName||'their own college'} can join these groups. Your identity stays anonymous.</p></div> : <section className="chat-area group-conversation" aria-label="Group conversation"><header className="chat-heading"><button className="icon-button" aria-label="Leave group" disabled={busy || sending} onClick={() => setDialog('leave')}><ArrowLeft size={21}/></button><span className="room-icon">{topicIcon(group.room.topic)}</span><div><h2>{group.room.name}</h2><button className="text-button member-summary" onClick={() => setDialog('members')}><Users size={12}/>{group.members.length} members · View members</button></div><button className="icon-button" aria-label="Group safety options" onClick={() => setDialog('members')}><ShieldCheck size={21}/></button></header>
       <div className="conversation-body"><div className="message-list" ref={list} role="log" aria-label="Group messages" onScroll={e => { const el=e.currentTarget; following.current=el.scrollHeight-el.scrollTop-el.clientHeight<80; if (following.current) setUnread(false); }}><div className="chat-start"><Hash size={23}/><strong>Welcome to {group.room.name}</strong><p>{group.room.description}<br/>Messages are temporary, not end-to-end encrypted.</p>{group.members.length === 1 ? <p className="empty-room">You’re the first one here. Others can join this room.</p> : null}</div>{group.messages.map(message => <div key={message.id} className={`message ${message.sender_id === uid ? 'mine' : 'theirs'}`}><button className="sender-label" disabled={message.sender_id === uid} onClick={() => { setTarget(message.sender_id); setDialog('safety'); }}>{message.sender_id === uid ? 'You' : alias(message.sender_id)}</button><span>{message.body}</span><time dateTime={message.created_at}>{time(message.created_at)}{message.sender_id === uid ? <Check size={12}/> : null}</time></div>)}{typingCount ? <div className="typing"><span className="dots"><i/><i/><i/></span>{typingCount === 1 ? 'Someone is typing…' : `${typingCount} people are typing…`}</div> : null}</div>{unread ? <button className="jump-latest" onClick={() => {following.current=true; setUnread(false); if (list.current) list.current.scrollTop=list.current.scrollHeight;}}><ArrowDown size={15}/>New messages</button> : null}</div>
       <div className="chat-composer"><form onSubmit={e => void send(e)}><label className="sr-only" htmlFor="group-message">Group message</label><input id="group-message" enterKeyHint="send" autoComplete="off" maxLength={2000} placeholder="Say hello to the group…" value={draft} onChange={e => type(e.target.value)} disabled={busy || blocked}/><button type="submit" className="send-button" aria-label={sending ? 'Sending group message' : 'Send group message'} onPointerDown={e => e.preventDefault()} disabled={busy || sending || blocked || !draft.trim()}><Send size={20}/></button></form><div className="chat-actions"><button className="button secondary" disabled={busy || sending} onClick={() => setDialog('leave')}><LogOut size={16}/>Leave group</button><span className="group-privacy"><ShieldCheck size={13}/>Anonymous · 18+</span><button className="icon-button" aria-label="Report or block a group member" onClick={() => setDialog('members')}><Flag size={18}/></button></div></div>
     </section>}
@@ -183,4 +197,3 @@ export default function GroupChat({uid, onBack}: {uid: string; onBack: () => voi
     </dialog></div> : null}
   </section>;
 }
-

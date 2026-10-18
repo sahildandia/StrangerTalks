@@ -68,8 +68,8 @@ jobs:
           if [ "$BUILD_TYPE" = 'release' ]; then TASK=assembleRelease; else TASK=assembleDebug; fi
           (cd android && ./gradlew "$TASK" --no-daemon)
           mkdir -p apk
-          cp "android/app/build/outputs/apk/$BUILD_TYPE/app-$BUILD_TYPE.apk" "apk/StrangerTalk-$BUILD_TYPE.apk"
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "apk/StrangerTalk-$BUILD_TYPE.apk"
+          cp "android/app/build/outputs/apk/$BUILD_TYPE/app-$BUILD_TYPE.apk" "apk/CampusMate-$BUILD_TYPE.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "apk/CampusMate-$BUILD_TYPE.apk"
           (cd apk && sha256sum *.apk > SHA256SUMS.txt)
       - name: Publish direct APK release
         if: inputs.build_type == 'release'
@@ -79,17 +79,16 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           TAG="v$VERSION"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" apk/StrangerTalk-release.apk --clobber
+            gh release upload "$TAG" apk/CampusMate-release.apk --clobber
           else
-            gh release create "$TAG" apk/StrangerTalk-release.apk --title "StrangerTalk $VERSION" --notes "Anonymous login, one-to-one Random Chat, and live Group Chat rooms."
+            gh release create "$TAG" apk/CampusMate-release.apk --verify-tag --title "CampusMate $VERSION" --notes "Student communities, campus events, and temporary one-to-one chats."
           fi
       - uses: actions/upload-artifact@v4
         with:
-          name: StrangerTalk-${{ inputs.build_type }}-${{ github.run_number }}
+          name: CampusMate-${{ inputs.build_type }}-${{ github.run_number }}
           path: apk/
           retention-days: 7
           if-no-files-found: error
       - name: Remove signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/strangertalk.jks"
-

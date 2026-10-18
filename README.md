@@ -2,11 +2,11 @@
 
 Anonymous one-to-one text chat for adults, with React + TypeScript + Vite, Supabase, and Capacitor Android. The source contains real database-backed matching and messaging. There are no bots, simulated messages, or invented online counts.
 
-**Status:** signed Android **1.0.1** is available with a fixed phone viewport, independent chat scrolling, a keyboard-aware composer and refined mobile UI. [Download release 5](https://github.com/sahildandia/StrangerTalks/actions/runs/39053110297/artifacts/12108014849) while signed into GitHub (artifact expires 24 October 2026). Extract the ZIP and install the APK over the existing app. Supabase is deployed; automated live API checks, eight browser layout checks and Android signature verification passed. Device confirmation of this update remains pending; see `docs/VERIFICATION.md`.
+**Status:** Android 1.0.4 adds the student event submission and admin approval flow, plus expanded searchable group rooms. Event submissions stay hidden until approved. Apply pending Supabase migrations and rebuild the signed APK before distributing this version.
 
 ## Current project setup
 
-The private repository `sahildandia/StrangerTalks` and Supabase project `sqchwdaspzkkfxavidha` are configured. Both database migrations are installed, their migration history is recorded, and the retention scheduler has completed successfully. Anonymous authentication and multi-client API checks passed. The permanent Android signing key is stored in repository secrets and the owner has saved its private backup.
+The private repository `sahildandia/StrangerTalks` and Supabase project `sqchwdaspzkkfxavidha` are configured. The core chat backend and retention scheduler were deployed before the event migration. Anonymous authentication and multi-client API checks passed. The permanent Android signing key is stored in repository secrets and the owner has saved its private backup.
 
 Backend setup below is a reference for a future fresh deployment. This configured project does not need another access token or another application of the initial SQL migration. No support email is required.
 
@@ -76,10 +76,28 @@ Use Chrome's **⋮ → Desktop site** when a dashboard hides an option. The assi
 ### Deploy the backend and enable cleanup
 
 1. Open the GitHub repository's **Actions** tab and enable workflows if asked.
-2. Choose **Set up Supabase backend → Run workflow → Run workflow**. It applies both SQL migrations, including Cron. Wait for a green check. Use a fresh Supabase project; the first migration is not designed to overwrite an existing unrelated application.
+2. Choose **Set up Supabase backend → Run workflow → Run workflow**. It applies every pending SQL migration, including the campus events and group room updates. Wait for a green check. Use a fresh Supabase project for a first install; the first migration is not designed to overwrite an existing unrelated application.
 3. In Supabase **Integrations → Cron / Database → Cron**, confirm `strangertalk-retention` runs every minute and has successful runs. The private scheduler performs expiry and deletion. If the migration cannot install Cron, enable the `pg_cron` extension in **Database → Extensions**, then rerun the backend workflow. Do not distribute the app while this is failing.
-4. Keep Supabase's exposed schemas restricted to the normal public API schemas; **never expose `private`**. The migration publishes only `chat_sessions` and `chat_messages` to Realtime and enforces RLS reads. No write permissions are given to app clients.
+4. Keep Supabase's exposed schemas restricted to the normal public API schemas; **never expose `private`**. The migrations publish only the chat message tables needed for Realtime and enforce RLS reads. App clients submit and review events through checked RPCs; they cannot directly edit event records.
 5. The backend workflow token can be revoked after deployment, and its GitHub secret removed. Future migrations will need a new token. Keep your database password private.
+
+### Campus event review
+
+Students upload a JPG, PNG, or WebP poster (up to 5 MB), event details, and an HTTPS registration link. Posters are stored privately. Only approved events and their poster images are returned to the student event feed; the Register Now button opens the submitted registration URL.
+
+To enable the Admin Panel, apply the campus-events migration, then run this once in Supabase **SQL Editor**, replacing the placeholder with the trusted adult admin's login email:
+
+```sql
+insert into private.event_admins(user_id)
+select id from auth.users where lower(email)=lower('ADMIN_ACCOUNT_EMAIL')
+on conflict do nothing;
+```
+
+The admin role references the Supabase Auth user directly. The admin must still sign in to StrangerTalk and accept the 18+ and community-guidelines checks before using **Campus Events → Admin Panel**; the app creates their profile at that point. Keep `private` out of the API exposed schemas.
+
+### Group rooms
+
+The campus group list has searchable rooms and All, My Groups, College, Department, and Interests filters. The latest room migration seeds College General, CSE Students, Placement Updates, Memes & Fun, Study Discussions, and Event Updates alongside the existing Lounge, Music, Games, and Daily Life rooms.
 
 ### Build, download, and install the signed APK
 

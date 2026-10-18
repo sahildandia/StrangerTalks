@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">StrangerTalk</string>
-    <string name="title_activity_main">StrangerTalk</string>
+    <string name="app_name">CampusMate</string>
+    <string name="title_activity_main">CampusMate</string>
     <string name="package_name">app.strangertalk.chat</string>
     <string name="custom_url_scheme">app.strangertalk.chat</string>
 </resources>

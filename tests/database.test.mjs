@@ -10,18 +10,30 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
   const database = (await pool.query('select current_database() as name')).rows[0].name;
   if (!database.endsWith('_test')) { await pool.end(); throw new Error('Refusing destructive fixtures outside a database whose name ends in _test.'); }
   try {
-    await pool.query(`drop schema if exists private cascade; drop schema if exists public cascade; drop schema if exists auth cascade;
+    await pool.query(`drop schema if exists private cascade; drop schema if exists public cascade; drop schema if exists auth cascade; drop schema if exists storage cascade;
       drop publication if exists supabase_realtime; create schema public; create schema auth;
       do $$ begin if not exists(select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
       if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if; end $$;
       grant usage on schema public,auth to authenticated,anon;
-      create table auth.users(id uuid primary key, is_anonymous boolean default true, created_at timestamptz default now(),last_sign_in_at timestamptz default now());
+      create schema storage;
+      grant usage on schema storage to authenticated,anon;
+      create table storage.buckets(id text primary key,name text not null,public boolean not null,file_size_limit bigint,allowed_mime_types text[]);
+      create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text not null,name text not null,owner_id text);
+      alter table storage.objects enable row level security;
+      grant select,insert,delete on storage.objects to authenticated;
+      create table auth.users(id uuid primary key, is_anonymous boolean default true, raw_user_meta_data jsonb not null default '{}'::jsonb, created_at timestamptz default now(),last_sign_in_at timestamptz default now());
       create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
       create publication supabase_realtime;`);
     await pool.query(await readFile(new URL('../supabase/migrations/202610170001_strangertalk.sql',import.meta.url),'utf8'));
-    const makeUser = async () => {
+    await pool.query(await readFile(new URL('../supabase/migrations/202610170003_group_chat.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180001_delete_chat_on_leave.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180002_campus_events.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180003_college_directory.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180004_college_scopes.sql',import.meta.url),'utf8'));
+    await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
+    const makeUser = async (college='Test University') => {
       const user = {id:randomUUID(),client:randomUUID()};
-      await pool.query('insert into auth.users(id) values($1)',[user.id]);
+      await pool.query('insert into auth.users(id,raw_user_meta_data) values($1,jsonb_build_object(\'college_name\',$2))',[user.id,college]);
       return user;
     };
     const asUser = async (u,query,values=[]) => {
@@ -83,11 +95,40 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       assert.equal((await call(c,'st_join')).state,'waiting');
       const next=await call(a,'st_next',[sid]); assert.equal(next.state,'chat');
       assert.ok([next.session.user_a,next.session.user_b].includes(c.id));
+      assert.equal((await pool.query('select count(*) from public.chat_messages where session_id=$1',[sid])).rows[0].count,'0');
       assert.equal((await call(b,'st_heartbeat')).state,'idle');
       await assert.rejects(call(b,'st_send',[sid,'late',randomUUID()]),/ended/);
       await resetRates(a); await assert.rejects(call(a,'st_next',[sid]),/changed/);
+      await resetRates(a); await call(a,'st_send',[next.session.id,'This should clear on leave.',randomUUID()]);
       await call(a,'st_leave',[next.session.id]);
+      assert.equal((await pool.query('select count(*) from public.chat_messages where session_id=$1',[next.session.id])).rows[0].count,'0');
       assert.equal((await call(c,'st_heartbeat')).state,'idle');
+    });
+    await t.test('random matches and group rooms never cross college boundaries',async () => {
+      await reset(); a=await makeUser('Test University'); b=await makeUser('Other University'); c=await makeUser('Test University');
+      await enroll(a); await enroll(b); await enroll(c);
+      const aCollege=(await pool.query('select college_id from public.profiles where id=$1',[a.id])).rows[0].college_id;
+      const bCollege=(await pool.query('select college_id from public.profiles where id=$1',[b.id])).rows[0].college_id;
+      assert.notEqual(aCollege,bCollege);
+      const aRooms=await call(a,'gc_list'); const bRooms=await call(b,'gc_list');
+      assert.ok(aRooms.length>0); assert.ok(bRooms.length>0); assert.notEqual(aRooms[0].id,bRooms[0].id);
+      await call(a,'gc_join',[aRooms[0].id]);
+      await assert.rejects(call(b,'gc_join',[aRooms[0].id]),/not available for your college/);
+      await call(c,'gc_join',[aRooms[0].id]);
+      const groupMessage=await call(a,'gc_send',[aRooms[0].id,'Only our campus.',randomUUID()]);
+      assert.equal((await asUser(c,'select * from public.gc_messages where id=$1',[groupMessage.id])).rows.length,1);
+      assert.equal((await asUser(b,'select * from public.gc_messages where id=$1',[groupMessage.id])).rows.length,0);
+      await call(a,'gc_leave',[aRooms[0].id]); await call(c,'gc_leave',[aRooms[0].id]);
+      assert.equal((await call(a,'st_join')).state,'waiting');
+      assert.equal((await call(b,'st_join')).state,'waiting');
+      assert.equal((await pool.query('select count(*) from private.active_members')).rows[0].count,'0');
+      const sameCollege=await call(c,'st_join'); assert.equal(sameCollege.state,'chat');
+      assert.ok([sameCollege.session.user_a,sameCollege.session.user_b].includes(a.id));
+      assert.ok(![sameCollege.session.user_a,sameCollege.session.user_b].includes(b.id));
+      const otherCollege=(await pool.query("select id from private.colleges where name='Other University'")).rows[0].id;
+      await call(a,'cm_set_my_college',[otherCollege]);
+      assert.equal((await pool.query('select count(*) from private.active_members where session_id=$1',[sameCollege.session.id])).rows[0].count,'0');
+      assert.equal((await pool.query('select college_id from public.profiles where id=$1',[a.id])).rows[0].college_id,otherCollege);
     });
     await t.test('report evidence is limited and block prevents re-pairing in either direction',async () => {
       await reset(); a=await makeUser(); b=await makeUser(); await enroll(a); await enroll(b);
@@ -135,6 +176,38 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       await pool.query("select private.st_moderate($1,24,'Reviewed test report')",[a.id]);
       await assert.rejects(call(a,'st_heartbeat'),/restricted/);
       assert.equal((await pool.query('select count(*) from private.moderation_actions')).rows[0].count,'1');
+    });
+    await t.test('event submissions stay private until an admin approves them',async () => {
+      await reset(); const student=await makeUser('Test University'); const admin=await makeUser('Test University'); const outsider=await makeUser('Other University'); await enroll(student); await enroll(admin); await enroll(outsider);
+      const poster=`${student.id}/${randomUUID()}.png`;
+      await pool.query("insert into storage.objects(bucket_id,name,owner_id) values('event-posters',$1,$2)",[poster,student.id]);
+      const submitted=await call(student,'ce_submit',['TechnoFest 2026','Department of CSE','Technical',new Date(Date.now()+86400000*2).toISOString().slice(0,10),'09:00','17:00','Main Block','A campus technology festival with talks, workshops, and student projects.','https://example.org/register',poster,'intra_college']);
+      assert.equal(submitted.status,'pending');
+      assert.equal((await asUser(student,'select * from public.ce_list($1)',[student.client])).rows.length,0);
+      assert.equal((await asUser(outsider,'select * from public.ce_list($1)',[outsider.client])).rows.length,0);
+      assert.equal((await asUser(student,'select * from public.ce_my_events($1)',[student.client])).rows.length,1);
+      assert.equal((await asUser(student,'select * from storage.objects')).rows.length,1);
+      await assert.rejects(asUser(student,"insert into storage.objects(bucket_id,name,owner_id) values('event-posters',$1,$2)",[`${admin.id}/forbidden.png`,admin.id]),/row-level security/);
+      await assert.rejects(asUser(admin,'select * from public.ce_admin_events($1)',[admin.client]),/Admin access required/);
+      await assert.rejects(asUser(student,'select * from public.campus_events'),/permission denied/);
+      assert.equal((await asUser(student,'select public.ce_can_read_poster($1) as allowed',[poster])).rows[0].allowed,true);
+      assert.equal((await asUser(admin,'select public.ce_can_read_poster($1) as allowed',[poster])).rows[0].allowed,false);
+      await pool.query('insert into private.event_admins(user_id) values($1)',[admin.id]);
+      assert.equal((await asUser(admin,'select * from public.ce_admin_events($1)',[admin.client])).rows.length,1);
+      await call(admin,'ce_review',[submitted.id,'approved',null]);
+      assert.equal((await asUser(student,'select * from public.ce_list($1)',[student.client])).rows.length,1);
+      assert.equal((await asUser(outsider,'select * from public.ce_list($1)',[outsider.client])).rows.length,0);
+      assert.equal((await asUser(outsider,'select public.ce_can_read_poster($1) as allowed',[poster])).rows[0].allowed,false);
+      assert.equal((await asUser(admin,'select public.ce_can_read_poster($1) as allowed',[poster])).rows[0].allowed,true);
+      const interPoster=`${student.id}/${randomUUID()}.png`;
+      await pool.query("insert into storage.objects(bucket_id,name,owner_id) values('event-posters',$1,$2)",[interPoster,student.id]);
+      const inter=await call(student,'ce_submit',['Inter Campus Meetup','Student Union','Social',new Date(Date.now()+86400000*3).toISOString().slice(0,10),'10:00','12:00','Main Block','A campus-wide student meetup for communities and networking.','https://example.org/inter',interPoster,'inter_college']);
+      await call(admin,'ce_review',[inter.id,'approved',null]);
+      assert.equal((await asUser(outsider,'select * from public.ce_list($1)',[outsider.client])).rows.length,1);
+      assert.equal((await asUser(outsider,'select public.ce_can_read_poster($1) as allowed',[interPoster])).rows[0].allowed,true);
+      await assert.rejects(call(student,'ce_review',[submitted.id,'rejected',null]),/Admin access required/);
+      await resetRates(student);
+      await assert.rejects(call(student,'ce_submit',['Unsafe link','Department','Technical',new Date(Date.now()+86400000*2).toISOString().slice(0,10),'09:00','10:00','Main Block','A campus technology festival with talks, workshops, and student projects.','javascript:alert(1)',poster,'intra_college']),/secure registration link/);
     });
   } finally { await pool.end(); }
 });

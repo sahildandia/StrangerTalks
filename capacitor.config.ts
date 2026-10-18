@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
-  appId: 'app.strangertalk.chat', appName: 'StrangerTalk', webDir: 'dist',
+  appId: 'app.strangertalk.chat', appName: 'CampusMate', webDir: 'dist',
   server: { hostname: process.env.CAPACITOR_HOSTNAME || 'localhost', androidScheme: 'https' },
   android: { backgroundColor: '#0F1020', allowMixedContent: false },
   plugins: {
