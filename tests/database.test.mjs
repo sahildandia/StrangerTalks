@@ -33,7 +33,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
     await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
     const makeUser = async (college='Test University') => {
       const user = {id:randomUUID(),client:randomUUID()};
-      await pool.query('insert into auth.users(id,raw_user_meta_data) values($1,jsonb_build_object(\'college_name\',$2))',[user.id,college]);
+      await pool.query('insert into auth.users(id,raw_user_meta_data) values($1,jsonb_build_object(\'college_name\',$2::text))',[user.id,college]);
       return user;
     };
     const asUser = async (u,query,values=[]) => {
