@@ -35,6 +35,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
     await pool.query(await readFile(new URL('../supabase/migrations/202610180007_chat_privacy_fixes.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180008_account_management.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180009_admin_college_groups.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180010_custom_group_capacity.sql',import.meta.url),'utf8'));
     await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
     const makeUser = async (college='Test University') => {
       const user = {id:randomUUID(),client:randomUUID(),college};
@@ -269,7 +270,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       await pool.query('update auth.users set banned_until=null where id=$1',[user.id]);
       assert.equal((await pool.query('select banned_until from public.profiles where id=$1',[user.id])).rows[0].banned_until,null);
     });
-    await t.test('admin with no college can join and moderate all colleges; group capacity stops at 1000',async () => {
+    await t.test('admin with no college can join and moderate all colleges; creators can set custom group capacities',async () => {
       await reset(); const admin=await makeUser(''); const student=await makeUser(); const outsider=await makeUser('Other University');
       await enroll(admin); await enroll(student); await enroll(outsider);
       await pool.query('insert into private.event_admins(user_id) values($1)',[admin.id]);
@@ -280,12 +281,12 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       assert.equal((await call(admin,'gc_poll',[otherRoom.id])).state,'joined');
       assert.equal((await asUser(admin,'select public.gc_can_read($1,$2) as allowed',[otherRoom.id,message.created_at])).rows[0].allowed,true);
       await assert.rejects(call(student,'gc_join',[otherRoom.id]),/not available/);
-      const pending=await call(student,'gc_submit_room',['Campus Network','A community for campus students.','general',1000]);
+      const pending=await call(student,'gc_submit_room',['Campus Network','A community for campus students.','general',5000]);
       assert.equal(pending.status,'pending');
-      await assert.rejects(pool.query('update private.gc_rooms set capacity=1001 where id=$1',[pending.id]),/check constraint/);
+      await assert.rejects(pool.query('update private.gc_rooms set capacity=1 where id=$1',[pending.id]),/check constraint/);
       await call(admin,'gc_admin_review_room',[pending.id,'approved',null]);
-      const approved=(await call(student,'gc_list')).find(room=>room.id===pending.id); assert.equal(approved.capacity,1000);
-      await resetRates(student); await assert.rejects(call(student,'gc_submit_room',['Too Large Group','A community for campus students.','general',1001]),/member limit/);
+      const approved=(await call(student,'gc_list')).find(room=>room.id===pending.id); assert.equal(approved.capacity,5000);
+      await resetRates(student); await assert.rejects(call(student,'gc_submit_room',['Invalid Size Group','A community for campus students.','general',1]),/member limit/);
       await pool.query('delete from auth.users where id=$1',[outsider.id]);
       assert.equal((await pool.query('select count(*) from public.profiles where id=$1',[outsider.id])).rows[0].count,'0');
     });
