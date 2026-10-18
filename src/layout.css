@@ -887,3 +887,5 @@ button { -webkit-user-select: none; user-select: none; }
 }
 
 .brand-icon>svg{width:76%;height:76%}.about>.campusmate-logo-svg{width:32px;height:32px}
+
+.group-photo{display:block;max-width:min(100%,320px);max-height:360px;object-fit:contain;border-radius:12px;}

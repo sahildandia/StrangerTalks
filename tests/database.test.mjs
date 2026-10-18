@@ -36,6 +36,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
     await pool.query(await readFile(new URL('../supabase/migrations/202610180008_account_management.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180009_admin_college_groups.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180010_custom_group_capacity.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180011_group_images_retention.sql',import.meta.url),'utf8'));
     await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
     const makeUser = async (college='Test University') => {
       const user = {id:randomUUID(),client:randomUUID(),college};
@@ -132,6 +133,20 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       const groupMessage=await call(a,'gc_send',[aRooms[0].id,'Only our campus.',randomUUID()]);
       assert.equal((await asUser(c,'select * from public.gc_messages where id=$1',[groupMessage.id])).rows.length,1);
       assert.equal((await asUser(b,'select * from public.gc_messages where id=$1',[groupMessage.id])).rows.length,0);
+      const photo='data:image/png;base64,iVBORw0KGgo=';
+      const photoNonce=randomUUID();
+      const image=await call(a,'gc_send_image',[aRooms[0].id,photo,photoNonce]);
+      assert.equal(image.image_data,photo);
+      assert.equal((await call(a,'gc_send_image',[aRooms[0].id,photo,photoNonce])).id,image.id);
+      await assert.rejects(call(b,'gc_send_image',[aRooms[0].id,photo,randomUUID()]),/no longer|Join again/);
+      await assert.rejects(call(a,'gc_send_image',[aRooms[0].id,'data:image/svg+xml;base64,abc',randomUUID()]),/valid photo/);
+      await pool.query("update public.gc_messages set created_at=now()-interval '23 hours' where id=$1",[image.id]);
+      await pool.query('select private.gc_cleanup()');
+      assert.equal((await pool.query('select count(*) from public.gc_messages where id=$1',[image.id])).rows[0].count,'1');
+      await pool.query("update public.gc_messages set created_at=now()-interval '25 hours' where id=$1",[image.id]);
+      await pool.query('select private.gc_cleanup()');
+      assert.equal((await pool.query('select count(*) from public.gc_messages where id=$1',[image.id])).rows[0].count,'0');
+
       await call(a,'gc_leave',[aRooms[0].id]); await call(c,'gc_leave',[aRooms[0].id]);
       assert.equal((await call(a,'st_join')).state,'waiting');
       assert.equal((await call(b,'st_join')).state,'waiting');
