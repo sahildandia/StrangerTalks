@@ -23,9 +23,19 @@ export function useViewport() {
       focusTimer = window.setTimeout(() => {
         const focused = document.activeElement;
         if (focused instanceof HTMLElement && focused.matches('input,textarea,select')) {
-          focused.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+          let scroller = focused.parentElement;
+          while (scroller && scroller !== document.body) {
+            const overflowY = getComputedStyle(scroller).overflowY;
+            if (scroller.scrollHeight > scroller.clientHeight + 1 && (overflowY === 'auto' || overflowY === 'scroll')) break;
+            scroller = scroller.parentElement;
+          }
+          if (!scroller || scroller === document.body) return;
+          const viewport = scroller.getBoundingClientRect();
+          const input = focused.getBoundingClientRect();
+          if (input.bottom > viewport.bottom - 12) scroller.scrollTop += input.bottom - viewport.bottom + 12;
+          else if (input.top < viewport.top + 12) scroller.scrollTop -= viewport.top + 12 - input.top;
         }
-      }, 250);
+      }, 280);
     };
     update();
     window.addEventListener('resize', update);

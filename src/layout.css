@@ -174,7 +174,6 @@ button { -webkit-user-select: none; user-select: none; }
 .screen-onboarding .main-panel, .screen-home .main-panel, .screen-dashboard .main-panel { width: 100%; min-height: 0; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); background: #090713; }
 .screen-onboarding .topbar, .screen-home .topbar { display: none; }
 .screen-onboarding .bottom-bar, .screen-home .bottom-bar, .screen-dashboard .bottom-bar { display: none; }
-.screen-onboarding .feedback, .screen-home .feedback { position: relative; z-index: 3; flex-shrink: 0; margin: 8px 16px 0; }
 .campus-logo { position: relative; display: grid; place-items: center; width: 52px; height: 52px; flex: 0 0 auto; border-radius: 17px; color: #fff; background: linear-gradient(145deg,#d134ff,#7843ff 55%,#3459f5); box-shadow: 0 0 28px #a926f888; }
 .campus-logo > svg { display:block; width:72%; height:72%; }
 .campus-wordmark { display: flex; align-items: center; gap: 9px; font-family: Manrope,sans-serif; color: #fff; font-size: 16px; font-weight: 800; letter-spacing: -.5px; }
@@ -390,6 +389,16 @@ button { -webkit-user-select: none; user-select: none; }
 .campus-splash h1 span { color:#df56ff; }
 .campus-splash p { color:#e8dff0; font-size:11px; }
 @keyframes splash-load { from { transform:scaleX(.15); opacity:.5; } to { transform:scaleX(1); opacity:1; } }
+/* App feedback floats above the active screen instead of changing its layout. */
+.main-panel .feedback {
+  position: fixed; z-index: 100; top: calc(var(--safe-top) + 12px); left: 50%;
+  width: min(calc(100vw - 28px), 520px); max-height: min(30vh, 180px); overflow-y: auto;
+  margin: 0 !important; padding: 12px 14px; transform: translateX(-50%);
+  border-radius: 15px; box-shadow: 0 14px 42px #0008; backdrop-filter: blur(18px);
+  animation: toast-in .18s ease-out both;
+}
+.main-panel .feedback .icon-button { flex: 0 0 auto; }
+@keyframes toast-in { from { opacity: 0; translate: 0 -7px; } to { opacity: 1; translate: 0 0; } }
 @media (max-width: 720px) {
   .dashboard-scroll { padding: 13px 15px 12px; }
   .campus-discovery-card { grid-template-columns:62px minmax(0,1fr); margin-top:15px; padding:12px; }

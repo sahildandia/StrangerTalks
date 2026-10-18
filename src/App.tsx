@@ -66,6 +66,11 @@ export default function App() {
   useEffect(() => { document.documentElement.dataset.theme = light ? 'light' : 'dark'; localStorage.setItem('st-theme', light ? 'light' : 'dark'); }, [light]);
   useEffect(() => { if (Capacitor.isNativePlatform()) void SystemBars.setStyle({style:SystemBarsStyle.Dark}).catch(()=>{}); }, []);
   useEffect(() => {
+    if (!error && !notice) return;
+    const timer = window.setTimeout(() => { setError(''); setNotice(''); }, error ? 7000 : 4200);
+    return () => window.clearTimeout(timer);
+  }, [error, notice]);
+  useEffect(() => {
     if (!modal) return;
     const previous = document.activeElement as HTMLElement | null;
     const dialog = document.querySelector('dialog');
@@ -352,7 +357,6 @@ export default function App() {
       <div className="side-footer"><ShieldCheck size={17}/><span>Anonymous by design. Kindness by choice.</span></div>
     </aside>
     <main className="main-panel">
-      <header className="topbar"><div className="mobile-brand"><span className="brand-icon"><CampusMateLogo/></span>CampusMate</div><span className="live-label"><i/> REAL PEOPLE. REAL CONNECTIONS.</span></header>
       {broken && engaged.current ? <div className="network-banner" role="status"><WifiOff size={16}/> Reconnecting… Messages are paused. Chats close after 75 seconds offline.<button onClick={() => void refresh()}>Retry</button></div> : null}
       {!online && (screen === 'home' || screen === 'dashboard') ? <div className="network-banner" role="status"><WifiOff size={16}/> You’re offline. Connect to the internet to start a conversation.</div> : null}
       {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div> : null}
