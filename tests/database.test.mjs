@@ -135,6 +135,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
       assert.equal((await asUser(b,'select * from public.gc_messages where id=$1',[groupMessage.id])).rows.length,0);
       const photo='data:image/png;base64,iVBORw0KGgo=';
       const photoNonce=randomUUID();
+      await resetRates(a);
       const image=await call(a,'gc_send_image',[aRooms[0].id,photo,photoNonce]);
       assert.equal(image.image_data,photo);
       assert.equal((await call(a,'gc_send_image',[aRooms[0].id,photo,photoNonce])).id,image.id);
