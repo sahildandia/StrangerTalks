@@ -187,3 +187,159 @@ button { -webkit-user-select: none; user-select: none; }
   .chat-actions .button { padding-left: 10px; padding-right: 10px; }
   .chat-heading p span { display: none; }
 }
+
+/* Branded anonymous sign-in and two-mode dashboard. */
+.screen-home .main-panel, .screen-dashboard .main-panel {
+  background: radial-gradient(ellipse at 50% 27%, #8059f41b, transparent 45%), var(--bg);
+}
+.screen-home .topbar, .screen-dashboard .topbar { height: 72px; padding-top: 12px; padding-bottom: 12px; }
+.screen-home .live-label, .screen-dashboard .live-label { color: #aaa3c5; }
+.screen-home .welcome { max-width: 520px; padding-top: 0; padding-bottom: 0; }
+.screen-home .welcome-story { flex: 0 0 auto; overflow: visible; padding: 4px 0 12px; }
+.screen-home .welcome h2 { font-size: clamp(32px, 3.4vw, 44px); }
+.screen-home .welcome .intro { margin: 10px 0 15px; }
+.chat-art { width: 180px; height: 142px; flex: 0 0 auto; position: relative; margin: 0 auto 6px; }
+.art-bubble { position: absolute; display: flex; align-items: center; justify-content: center; gap: 7px; width: 94px; height: 63px; border: 1px solid #c9b7ff55; border-radius: 21px 21px 21px 8px; background: linear-gradient(145deg, #3d2c6c, #211f43); box-shadow: 0 12px 28px #05031044; }
+.art-bubble::after { content: ""; position: absolute; left: 13px; bottom: -8px; width: 15px; height: 15px; background: #282349; border-left: 1px solid #c9b7ff55; transform: skewY(-36deg) rotate(-12deg); }
+.art-bubble i { z-index: 1; width: 7px; height: 7px; border-radius: 50%; background: #c2b0ff; }
+.bubble-back { top: 10px; left: 20px; opacity: .75; transform: rotate(-12deg); }
+.bubble-back i { background: #8587f2; }
+.bubble-front { right: 16px; bottom: 15px; width: 112px; height: 72px; border-color: #e0d4ff89; background: linear-gradient(145deg, #7651d4, #4d4ce0); transform: rotate(7deg); }
+.bubble-front::after { left: auto; right: 15px; background: #554bd4; border-left: 0; border-right: 1px solid #e0d4ff89; transform: skewY(36deg) rotate(12deg); }
+.bubble-front i { width: 8px; height: 8px; background: #fff; }
+.art-shadow { position: absolute; bottom: 1px; left: 40px; width: 103px; height: 13px; border-radius: 50%; background: #09071275; filter: blur(7px); z-index: -1; }
+.art-spark { position: absolute; top: 8px; right: 18px; color: #d8c8ff; font-size: 18px; }
+.group-art .bubble-back { left: 2px; top: 17px; }
+.group-art .bubble-front { right: 4px; bottom: 13px; }
+.group-art .bubble-third { left: 57px; top: 0; width: 56px; height: 42px; border-radius: 14px 14px 14px 5px; background: linear-gradient(145deg, #40bfa3, #238c94); }
+.group-art .bubble-third i { width: 5px; height: 5px; background: #e6fff9; }
+.compact-art { width: 142px; height: 104px; margin: 0; transform: scale(.88); transform-origin: center; }
+.screen-home .start-card { padding: 18px 20px; border-radius: 22px; }
+.login-card-title { margin-bottom: 14px; }
+.login-card-title h3 { font-size: 15px; letter-spacing: -.3px; }
+.login-card-title p { margin-top: 4px; color: var(--muted); font-size: 11px; }
+.screen-home .setup-note { text-align: center; }
+.screen-home .bottom-bar, .screen-dashboard .bottom-bar, .screen-groups .bottom-bar { display: none; }
+
+/* Dashboard uses a bounded, touch-friendly scroll area on small screens. */
+.dashboard { flex: 1; width: min(100%, 820px); min-height: 0; margin: 0 auto; padding: 4px 34px 20px; display: flex; flex-direction: column; overflow: hidden; }
+.dashboard-intro { flex: 0 0 auto; text-align: center; padding: 5px 0 16px; }
+.dashboard-intro .eyebrow, .room-intro .eyebrow { color: var(--purple); font-size: 9px; letter-spacing: 1.8px; }
+.dashboard-intro h1 { margin-top: 8px; font-size: clamp(27px, 3vw, 36px); line-height: 1.18; letter-spacing: -1.3px; }
+.dashboard-intro h1 span { color: #b49bff; }
+.dashboard-intro p { color: var(--muted); font-size: 12px; margin-top: 6px; }
+.mode-grid { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 3px 2px 10px; }
+.mode-card { min-height: 282px; display: flex; flex-direction: column; align-items: flex-start; padding: 17px; border: 1px solid var(--line); border-radius: 23px; background: radial-gradient(ellipse at 50% 3%, #8f62f51c, transparent 50%), var(--surface); box-shadow: 0 12px 30px #03030c25; }
+.group-mode { background: radial-gradient(ellipse at 50% 3%, #42c6a51b, transparent 50%), var(--surface); }
+.mode-art-row { width: 100%; min-height: 108px; display: flex; align-items: center; justify-content: center; position: relative; }
+.mode-badge { position: absolute; top: 0; right: 0; display: grid; place-items: center; min-width: 35px; height: 27px; padding: 0 8px; border-radius: 9px; color: #d4c6ff; background: #a78bfa17; border: 1px solid #a78bfa2a; font-weight: 700; font-size: 10px; }
+.group-mode .mode-badge { color: #88e3c9; background: #40bfa315; border-color: #40bfa32a; }
+.mode-card h2 { margin-top: 5px; font-size: 17px; letter-spacing: -.4px; }
+.mode-card p { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.mode-card .button { width: 100%; margin-top: auto; min-height: 46px; padding: 11px 12px; font-size: 11px; border-radius: 13px; }
+.mode-card .button svg { width: 17px; height: 17px; }
+.dashboard-safety { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 7px; padding-top: 10px; color: var(--muted); font-size: 10px; }
+.dashboard-safety svg { color: #73d8b4; }
+.dashboard-safety span { margin-left: 4px; padding: 4px 7px; color: #bcaaff; border: 1px solid #a78bfa2c; border-radius: 7px; font-size: 9px; }
+
+/* Room list and the live group transcript share the app's fixed phone viewport. */
+.groups-screen { flex: 1; width: min(100%, 920px); min-height: 0; overflow: hidden; margin: 0 auto; padding: 0 28px 16px; display: flex; flex-direction: column; }
+.groups-title { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 3px 0 12px; }
+.groups-title .icon-button { min-height: 44px; min-width: 44px; background: var(--surface); border: 1px solid var(--line); }
+.groups-title h1 { font-size: 20px; letter-spacing: -.5px; }
+.groups-title h1 span { margin-left: 4px; color: #8fe0c6; font-size: 10px; }
+.groups-title p { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.groups-screen .network-banner { flex-shrink: 0; margin: 0 0 8px; border-radius: 12px; }
+.groups-screen .feedback { flex-shrink: 0; margin: 0 0 8px; }
+.room-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; display: flex; flex-direction: column; gap: 9px; padding: 2px 2px 8px; }
+.room-intro { flex: 0 0 auto; padding: 4px 2px 5px; }
+.room-intro h2 { margin-top: 4px; font-size: 20px; letter-spacing: -.6px; }
+.room-intro p { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.room-card { flex: 0 0 auto; min-height: 72px; display: flex; align-items: center; gap: 11px; padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.room-icon { flex: 0 0 auto; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: #c0a9ff; background: #956cf21a; border: 1px solid #a78bfa22; }
+.room-icon svg { width: 19px; height: 19px; }
+.topic-music .room-icon { color: #f0a6cb; background: #ed76a51a; border-color: #ed76a526; }
+.topic-gaming .room-icon { color: #8de1c5; background: #40bfa31a; border-color: #40bfa326; }
+.topic-life .room-icon { color: #f1cb81; background: #dba73a1a; border-color: #dba73a26; }
+.room-card > div { min-width: 0; flex: 1; }
+.room-card h3 { font-size: 12px; letter-spacing: -.1px; }
+.room-card p { margin-top: 2px; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.room-card small { display: flex; align-items: center; gap: 4px; margin-top: 5px; color: #82d7b7; font-size: 9px; }
+.room-join { flex: 0 0 auto; width: 42px; height: 42px; color: var(--purple); border: 1px solid var(--line); background: var(--bg); }
+.room-loading { padding: 22px; text-align: center; color: var(--muted); font-size: 12px; }
+.room-footnote { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 0; color: var(--muted); font-size: 9px; line-height: 1.6; text-align: center; }
+.room-footnote svg { color: #74d9b6; }
+.groups-screen .chat-area { width: 100%; margin: 0; flex: 1; min-height: 0; height: auto; }
+.group-conversation .chat-heading { min-height: 66px; padding: 9px 15px; }
+.group-conversation .chat-heading > div { min-width: 0; }
+.group-conversation .chat-heading h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-conversation .chat-heading .room-icon { width: 38px; height: 38px; }
+.member-summary { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.member-summary svg { margin-right: 4px; vertical-align: -2px; }
+.group-conversation .chat-start { padding-top: 14px; }
+.group-conversation .chat-start p { max-width: 310px; margin: 3px auto; }
+.group-conversation .chat-start .empty-room { color: #82d7b7; }
+.sender-label { align-self: flex-start; color: var(--purple); background: none; padding: 0 3px; font-size: 9px; }
+.sender-label:disabled { color: var(--muted); opacity: 1; }
+.message.mine .sender-label { align-self: flex-end; }
+.group-privacy { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 9px; white-space: nowrap; }
+.group-conversation .chat-actions { gap: 8px; }
+.member-list { display: flex; flex-direction: column; max-height: 42dvh; overflow-y: auto; }
+.member-list > button { display: flex; align-items: center; gap: 11px; padding: 11px 0; border-bottom: 1px solid var(--line); color: var(--text); background: transparent; text-align: left; }
+.member-list > button > span:nth-child(2) { flex: 1; }
+.member-list > button > span:nth-child(2) small { display: block; color: var(--muted); font-size: 10px; }
+.member-list > button > svg { color: var(--purple); }
+.member-avatar { display: grid; place-items: center; width: 37px; height: 37px; border-radius: 12px; color: var(--purple); background: var(--soft); }
+
+@media (max-width: 720px) {
+  .screen-home .topbar, .screen-dashboard .topbar { height: 62px; padding: 8px 18px; }
+  .screen-home .welcome { padding: 0 18px; }
+  .screen-home .welcome-story { padding: 0 0 8px; }
+  .screen-home .welcome h2 { font-size: clamp(30px, 8vw, 35px); }
+  .screen-home .welcome .intro { margin: 7px 0 10px; font-size: 11px; }
+  .chat-art { width: 150px; height: 118px; transform: scale(.88); margin-bottom: 0; }
+  .screen-home .start-card { padding: 15px 16px; }
+  .screen-home .login-card-title { margin-bottom: 10px; }
+  .screen-home .check-row { margin-bottom: 6px; }
+  .screen-home .start-button { margin-top: 9px; min-height: 46px; }
+  .screen-home .micro { margin-top: 7px; }
+  .dashboard { padding: 3px 18px 12px; }
+  .dashboard-intro { padding: 0 0 12px; }
+  .dashboard-intro h1 { font-size: clamp(27px, 7vw, 32px); }
+  .mode-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(2, minmax(190px, 1fr)); gap: 10px; padding-top: 1px; }
+  .mode-card { min-height: 190px; padding: 12px 16px; border-radius: 19px; }
+  .mode-art-row { min-height: 85px; }
+  .compact-art { transform: scale(.7); }
+  .mode-card h2 { margin-top: 0; font-size: 15px; }
+  .mode-card p { margin-top: 2px; font-size: 10px; }
+  .mode-card .button { min-height: 40px; padding: 8px 12px; }
+  .dashboard-safety { padding-top: 6px; font-size: 9px; }
+  .groups-screen { padding: 0 14px 10px; }
+  .groups-title { min-height: 56px; padding-bottom: 8px; }
+  .groups-title h1 { font-size: 18px; }
+  .room-list { gap: 8px; }
+  .room-intro { padding-top: 1px; }
+  .room-intro h2 { font-size: 18px; }
+  .room-card { min-height: 68px; padding: 8px; gap: 9px; }
+  .room-icon, .room-join { width: 39px; height: 39px; }
+  .group-conversation .chat-heading { padding: 8px 11px; }
+  .group-conversation .chat-actions { gap: 7px; }
+  .group-conversation .chat-actions .button { padding: 8px 10px; font-size: 10px; }
+  .group-privacy { font-size: 8px; }
+}
+@media (max-width: 360px) {
+  .dashboard { padding-left: 13px; padding-right: 13px; }
+  .groups-screen { padding-left: 10px; padding-right: 10px; }
+  .room-card p { font-size: 8px; }
+  .group-privacy { display: none; }
+}
+@media (max-height: 740px) {
+  .dashboard-intro { padding-bottom: 7px; }
+  .dashboard-intro h1 { font-size: 26px; }
+  .mode-card { min-height: 170px; }
+  .mode-grid { grid-template-rows: repeat(2, minmax(170px, 1fr)); }
+  .groups-title { min-height: 50px; }
+  .room-card { min-height: 62px; }
+  .room-icon, .room-join { width: 36px; height: 36px; }
+}
+

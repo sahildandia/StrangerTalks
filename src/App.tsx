@@ -5,9 +5,12 @@ import { Capacitor } from '@capacitor/core';
 import { configured, db, friendlyError, rpc, TERMS_VERSION, type ChatSession, type Message, type Snapshot } from './lib';
 import Captcha from './Captcha';
 import { useViewport } from './useViewport';
+import ChatArt from './ChatArt';
+import Dashboard from './Dashboard';
+import GroupChat from './GroupChat';
 
 type Modal = 'settings' | 'privacy' | 'guidelines' | 'report' | 'end' | null;
-type Screen = 'home' | 'searching' | 'chat' | 'disconnected';
+type Screen = 'home' | 'dashboard' | 'groups' | 'searching' | 'chat' | 'disconnected';
 const support = import.meta.env.VITE_SUPPORT_EMAIL as string | undefined;
 const time = (date: string) => new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -157,6 +160,8 @@ export default function App() {
     if (!Capacitor.isNativePlatform()) return;
     const handler = NativeApp.addListener('backButton', () => {
       if (modal) setModal(null);
+      else if (screen === 'groups') window.dispatchEvent(new Event('st-group-back'));
+      else if (screen === 'dashboard') setScreen('home');
       else if (screen === 'chat' || screen === 'searching') setModal('end');
       else if (screen === 'disconnected') { engaged.current = false; setScreen('home'); }
       else void NativeApp.exitApp();
@@ -183,6 +188,12 @@ export default function App() {
         setUid(data.user?.id ?? ''); setNeedsCaptcha(false);
       }
       await rpc('st_begin', { p_adult: true, p_terms_version: TERMS_VERSION });
+      setScreen('dashboard'); setConnected(true);
+    });
+  }
+  function startRandom() {
+    void action(async () => {
+      await rpc('st_begin', { p_adult: true, p_terms_version: TERMS_VERSION });
       const snapshot = await rpc<Snapshot>('st_join');
       engaged.current = true; apply(snapshot); setConnected(true);
       if (snapshot.state === 'chat' && snapshot.session) await loadMessages(snapshot.session.id, generation.current);
@@ -192,7 +203,7 @@ export default function App() {
     void action(async () => {
       await rpc('st_leave', { p_session_id: sessionRef.current?.id ?? null });
       engaged.current = false; sessionRef.current = null; setSession(null); setMessages([]); setDraft(''); pendingMessage.current = null;
-      setScreen('home'); setModal(null);
+      setScreen('dashboard'); setModal(null);
     });
   }
   function next() {
@@ -254,18 +265,19 @@ export default function App() {
 
       {screen === 'home' ? <section className="welcome" aria-label="Start a conversation">
         <div className="welcome-story">
-        <span className="pill"><Sparkles size={14}/> A connection starts with a hello</span>
-        <div className="hero-icon" aria-hidden="true"><MessageCircle size={48} strokeWidth={1.5}/><span><Sparkles size={18}/></span></div>
-        <h2>Someone new.<br /><span>A fresh perspective.</span></h2><p className="intro">Talk to strangers. Make new connections.<br />One hello can change your day.</p>
-        <div className="feature-row"><div><span><Users size={20}/></span><strong>Real people</strong><small>One-to-one chats</small></div><div><span><LockKeyhole size={20}/></span><strong>Stay anonymous</strong><small>No name needed</small></div><div><span><Shuffle size={20}/></span><strong>Fresh connections</strong><small>A new perspective</small></div></div>
+        <ChatArt/>
+        <h2>Your next hello<br /><span>starts here.</span></h2><p className="intro">Real conversations. No account needed.</p>
         </div>
-        <div className="start-card"><div className="card-caption"><span>YOUR NEXT HELLO</span><span>18+ only</span></div><label className="check-row"><input type="checkbox" checked={adult} onChange={e => setAdult(e.target.checked)}/><span>I confirm that I am <strong>18 or older</strong>.</span></label><label className="check-row"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}/><span>I agree to the <button className="text-button" onClick={e => { e.preventDefault(); setModal('guidelines'); }}>Community Guidelines</button> and <button className="text-button" onClick={e => { e.preventDefault(); setModal('privacy'); }}>Privacy Policy</button>.</span></label>
+        <div className="start-card"><div className="login-card-title"><h3>Welcome to StrangerTalk</h3><p>Log in anonymously and start connecting.</p></div><label className="check-row"><input type="checkbox" checked={adult} onChange={e => setAdult(e.target.checked)}/><span>I confirm that I am <strong>18 or older</strong>.</span></label><label className="check-row"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}/><span>I agree to the <button className="text-button" onClick={e => { e.preventDefault(); setModal('guidelines'); }}>Community Guidelines</button> and <button className="text-button" onClick={e => { e.preventDefault(); setModal('privacy'); }}>Privacy Policy</button>.</span></label>
           {needsCaptcha ? <Captcha key={captchaKey} onToken={setCaptchaToken}/> : null}
-          <button className="button primary start-button" disabled={busy || !adult || !consent || !online || (needsCaptcha && !captchaToken)} onClick={start}><MessageCircle size={20}/>{busy ? 'Connecting securely…' : 'Start a conversation'}<ArrowRight size={20}/></button>
-          <p className="micro"><ShieldCheck size={13}/> Be kind. Stay curious. Keep personal details private.</p>
+          <button className="button primary start-button" disabled={busy || !adult || !consent || !online || (needsCaptcha && !captchaToken)} onClick={start}><MessageCircle size={20}/>{busy ? 'Logging in securely…' : 'Log in anonymously'}<ArrowRight size={20}/></button>
+          <p className="micro"><LockKeyhole size={13}/> No email. No phone. No password.</p>
         </div>
         {!configured ? <p className="setup-note">Backend setup is required before live chatting is available.</p> : null}
       </section> : null}
+
+      {screen === 'dashboard' ? <Dashboard busy={busy || !online} onRandom={startRandom} onGroups={() => { void action(async () => { await rpc('st_begin', { p_adult: true, p_terms_version: TERMS_VERSION }); setScreen('groups'); }); }}/>:null}
+      {screen === 'groups' ? <GroupChat uid={uid} onBack={() => setScreen('dashboard')}/>:null}
 
       {screen === 'searching' ? <section className="center-state"><div className="search-art" aria-hidden="true"><div/><div/><span className="hero-icon"><Shuffle size={45}/></span></div><span className="pill">A new perspective is on its way</span><h2>Searching for<br /><span>a stranger…</span></h2><p>We’re looking for another available adult.<br />If nobody else is here, we’ll keep waiting.</p><div className="dots" aria-label="Searching"><i/><i/><i/></div><button className="button secondary" disabled={busy} onClick={leave}><X size={18}/> Cancel search</button><p className="micro">Only real people. No bots or simulated matches.</p></section> : null}
 
@@ -279,7 +291,7 @@ export default function App() {
     </main>
 
     {modal ? <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget && !busy) setModal(null); }}><dialog open className="modal" aria-modal="true" aria-labelledby="modal-title" onCancel={e => { e.preventDefault(); if (!busy) setModal(null); }}><div className="modal-heading"><h2 id="modal-title">{modal === 'settings' ? 'Make yourself at home' : modal === 'privacy' ? 'Your privacy matters' : modal === 'guidelines' ? 'A kinder corner of the internet' : modal === 'report' ? 'Keep the community safe' : 'End this conversation?'}</h2><button className="icon-button" disabled={busy} aria-label="Close dialog" onClick={() => setModal(null)}><X size={20}/></button></div>
-      {modal === 'settings' ? <div className="settings-list"><p>A little space for a fresh perspective.</p><button onClick={() => setLight(v => !v)}>{light ? <Sun/> : <Moon/>}<span>Appearance<small>{light ? 'Light' : 'Midnight'} theme</small></span><span className="pill">Switch</span></button><button onClick={() => setModal('privacy')}><LockKeyhole/><span>Privacy policy<small>How your data is handled</small></span><ArrowRight size={18}/></button><button onClick={() => setModal('guidelines')}><ShieldCheck/><span>Community guidelines<small>Be kind. Stay safe.</small></span><ArrowRight size={18}/></button><div className="about"><MessageCircle/><strong>StrangerTalk 1.0.1</strong><p>Talk to Strangers. Make New Connections.</p><small>For adults 18+ · Text only</small></div></div> : null}
+      {modal === 'settings' ? <div className="settings-list"><p>A little space for a fresh perspective.</p><button onClick={() => setLight(v => !v)}>{light ? <Sun/> : <Moon/>}<span>Appearance<small>{light ? 'Light' : 'Midnight'} theme</small></span><span className="pill">Switch</span></button><button onClick={() => setModal('privacy')}><LockKeyhole/><span>Privacy policy<small>How your data is handled</small></span><ArrowRight size={18}/></button><button onClick={() => setModal('guidelines')}><ShieldCheck/><span>Community guidelines<small>Be kind. Stay safe.</small></span><ArrowRight size={18}/></button><div className="about"><MessageCircle/><strong>StrangerTalk 1.0.2</strong><p>Talk to Strangers. Make New Connections.</p><small>For adults 18+ · Text and group chat</small></div></div> : null}
       {modal === 'privacy' ? <div className="legal"><p>Policy version {TERMS_VERSION}. StrangerTalk uses a random Supabase identity, stored on your device, without an email or phone number. The service provider can process IP addresses and technical security logs. Anonymous does not mean untraceable.</p><h3>Temporary conversations</h3><p>Messages travel over encrypted connections (HTTPS/WSS), but are readable by the service operator. They are not end-to-end encrypted. Chats last at most one hour. A scheduled cleanup deletes ordinary messages within about 11 minutes after a chat ends, or about 61 minutes after sending, whichever comes first. Ended session records last up to a day.</p><h3>Reports and blocks</h3><p>A report saves up to the last 20 messages as private evidence for up to 30 days. Only the operator can review reports. Blocked identity pairs and consent records are retained with your anonymous identity, which expires after 90 days of inactivity. Moderation action logs expire after 90 days. Provider logs and backups can follow separate provider retention schedules.</p><h3>Your device and choices</h3><p>Session credentials and appearance settings are stored in the app’s private device storage (browser storage on web). Clearing app data removes your identity and blocks on this device. Blocks and bans apply to an identity; a person can return with a new identity. No advertising or analytics SDK is included.</p><p>The 18+ confirmation is a self-attestation, not verified age. Do not send names, phone numbers, addresses, passwords, or sensitive information.</p><h3>Contact and deletion</h3><p>{support ? <>Contact <a href={`mailto:${support}`}>{support}</a> for privacy or safety requests. </> : 'No support email is configured. Use the in-chat Report and Block controls for safety concerns. '}Your anonymous reference: <code>{uid || 'Not signed in'}</code>. {support ? 'Include it in an owner request. ' : null}The app contains no automatic emergency response.</p><p><a href="https://supabase.com/privacy" target="_blank" rel="noreferrer">Supabase privacy information</a>. If CAPTCHA is enabled, hCaptcha also processes challenge data under <a href="https://www.hcaptcha.com/privacy" target="_blank" rel="noreferrer">its privacy policy</a>.</p></div> : null}
       {modal === 'guidelines' ? <div className="legal"><div className="safety-icon"><ShieldCheck/></div><p>StrangerTalk is for adults 18 and older. By continuing, you agree to these rules.</p><ul><li>Treat people with respect. No harassment, hate, threats, or bullying.</li><li>No sexual solicitation, exploitation, grooming, or content involving minors.</li><li>No scams, spam, links, or illegal activity.</li><li>Keep personal details private. Never send money or share your location.</li><li>If someone makes you uncomfortable, end the chat, report, and block them.</li></ul><p>Basic automated filters and message limits reduce some abuse; they cannot detect every harmful message. Reports go to the app operator for manual review. A report also blocks that anonymous identity.</p><p>If someone appears under 18, end and report the chat. If there is immediate danger, contact your local emergency services.</p>{support ? <p>Safety contact: <a href={`mailto:${support}`}>{support}</a></p> : null}</div> : null}
       {modal === 'report' ? <div className="legal"><p>Reporting sends up to the last 20 messages to the app owner for review, ends the chat, and blocks this anonymous identity.</p><label htmlFor="reason">Reason</label><select id="reason" value={reason} onChange={e => setReason(e.target.value)}><option value="harassment">Harassment or hate</option><option value="sexual_content">Sexual content or solicitation</option><option value="underage">Person appears under 18</option><option value="spam">Spam or scam</option><option value="other">Other safety concern</option></select><button className="button primary" disabled={busy} onClick={() => safety(true)}><Flag size={17}/>{busy ? 'Saving…' : 'Report and block'}</button><button className="button secondary" disabled={busy} onClick={() => safety(false)}><Ban size={17}/>Block without reporting</button><p className="micro">Blocking lasts for this anonymous identity. It cannot stop someone creating a new identity.</p></div> : null}
@@ -288,3 +300,4 @@ export default function App() {
     </dialog></div> : null}
   </div>;
 }
+
