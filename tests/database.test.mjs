@@ -32,7 +32,7 @@ test('PostgreSQL security and conversation integration', {skip: !url && 'Set TES
     await pool.query(await readFile(new URL('../supabase/migrations/202610180004_college_scopes.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180005_refresh_postgrest_college_schema.sql',import.meta.url),'utf8'));
     await pool.query(await readFile(new URL('../supabase/migrations/202610180006_group_approval.sql',import.meta.url),'utf8'));
-    await pool.query(await readFile(new URL('../supabase/migrations/202610180007_next_clears_skipped_messages.sql',import.meta.url),'utf8'));
+    await pool.query(await readFile(new URL('../supabase/migrations/202610180007_chat_privacy_fixes.sql',import.meta.url),'utf8'));
     await pool.query("insert into private.colleges(name) values('Test University'),('Other University') on conflict do nothing");
     const makeUser = async (college='Test University') => {
       const user = {id:randomUUID(),client:randomUUID(),college};
