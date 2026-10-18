@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
@@ -45,6 +45,30 @@ jobs:
       - run: npm run assets
       - name: Install Android SDK
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          chmod +x android/gradlew
+      - name: Verify native header and keyboard layout
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            adb shell settings put secure show_ime_with_hard_keyboard 1
+            cd android && ./gradlew connectedDebugAndroidTest --no-daemon; result=$?; adb pull /sdcard/Android/data/app.strangertalk.chat/files/ui-checks ../native-ui-screenshots || true; exit "$result"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-ui-checks
+          path: |
+            native-ui-screenshots/
+            android/app/build/reports/androidTests/
+            android/app/build/outputs/androidTest-results/
       - name: Restore release signing key
         if: inputs.build_type == 'release'
         env:

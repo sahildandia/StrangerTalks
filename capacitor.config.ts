@@ -4,7 +4,8 @@ const config: CapacitorConfig = {
   server: { hostname: process.env.CAPACITOR_HOSTNAME || 'localhost', androidScheme: 'https' },
   android: { backgroundColor: '#0F1020', allowMixedContent: false },
   plugins: {
-    SystemBars: { insetsHandling: 'css', initialViewportFitValueHint: 'cover' },
+    // MainActivity applies system/keyboard insets once, outside the WebView.
+    SystemBars: { insetsHandling: 'disable', style: 'DARK' },
     SplashScreen: { launchShowDuration: 900, backgroundColor: '#0F1020', showSpinner: false, androidScaleType: 'CENTER_INSIDE' }
   }
 };

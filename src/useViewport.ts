@@ -7,6 +7,7 @@ export function useViewport() {
   useEffect(() => {
     const viewport = window.visualViewport;
     const native = Capacitor.isNativePlatform();
+    document.documentElement.classList.toggle('native-insets', native);
     const update = () => {
       if (viewport && viewport.scale !== 1) return;
       // Android's adjustResize already reports the available WebView height in
@@ -47,6 +48,7 @@ export function useViewport() {
       viewport?.removeEventListener('resize', update);
       document.removeEventListener('focusin', keepFocusedInputVisible);
       document.documentElement.style.removeProperty('--app-height');
+      document.documentElement.classList.remove('native-insets');
     };
   }, []);
 }
