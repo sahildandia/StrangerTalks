@@ -190,7 +190,7 @@ button { -webkit-user-select: none; user-select: none; }
 .onboarding-dots button { width: 7px; height: 7px; border-radius: 20px; padding: 0; background: #ffffff68; }
 .onboarding-dots button[aria-current="step"] { width: 22px; background: #d546ff; }
 .onboarding-next { width: 100%; min-height: 50px; border-radius: 15px; background: linear-gradient(100deg,#c62fff,#733df5 52%,#385be9); box-shadow: 0 8px 25px #7b35e955; }
-.auth-screen { align-items: center; justify-content: center; padding: max(24px,var(--safe-top)) max(18px,var(--safe-right)) max(16px,var(--safe-bottom)) max(18px,var(--safe-left)); background-image: linear-gradient(180deg,#080713ef 0%,#0a0714f0 62%,#130925e8 100%),url('/campus-dusk.webp'); }
+.auth-screen { align-items: center; justify-content: safe center; min-height:0; overflow-x:hidden; overflow-y:auto; overscroll-behavior-y:contain; padding: max(20px,var(--safe-top)) max(18px,var(--safe-right)) max(16px,var(--safe-bottom)) max(18px,var(--safe-left)); background-image: linear-gradient(180deg,#080713ef 0%,#0a0714f0 62%,#130925e8 100%),url('/campus-dusk.webp'); }
 .auth-screen { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .auth-brand,.auth-card,.auth-footer { flex-shrink: 0; }
 .auth-brand { width: min(100%,420px); display: flex; align-items: center; gap: 12px; margin: 0 auto 17px; font-family: Manrope,sans-serif; font-size: 18px; font-weight: 800; }
@@ -233,7 +233,7 @@ button { -webkit-user-select: none; user-select: none; }
 .college-request input { width:100%; min-height:42px; padding:0 11px; border:1px solid #ffffff1b; border-radius:11px; outline:0; color:#fff; background:#100e1a; font-size:11px; }
 .college-request input:focus { border-color:#c36aff88; box-shadow:0 0 0 3px #c948ff12; }
 .college-request { display:grid; gap:6px; margin-top:4px; padding:10px; border:1px solid #ffffff14; border-radius:12px; background:#ffffff05; }
-.college-request>div { display:flex; gap:7px; }
+.college-request>div { display:flex; align-items:center; gap:7px; }
 .college-request input { min-width:0; flex:1; }
 .college-request .button { min-height:38px; padding:0 11px; border-radius:10px; font-size:10px; }
 .college-request p { color:#c9a3eb; font-size:9px; line-height:1.45; }
@@ -401,8 +401,8 @@ button { -webkit-user-select: none; user-select: none; }
   .tile-copy strong { font-size: 8px; }
   .tile-copy small { font-size: 7px; }
   .auth-card { padding: 14px; }
-  .college-request>div { flex-direction:column; }
-  .college-request .button { width:100%; }
+  .college-request input { font-size:10px; }
+  .college-request .button { flex:0 0 auto; min-width:70px; }
 }
 @media (max-height: 650px) {
   .campus-onboarding { padding-top: 10px; padding-bottom: 12px; }
@@ -424,8 +424,8 @@ button { -webkit-user-select: none; user-select: none; }
   .auth-brand { margin-bottom:12px; }
   .auth-brand-image { width:46px; height:46px; border-radius:14px; }
   .auth-heading h1 { font-size:23px; }
-  .college-request>div { flex-direction:column; }
-  .college-request .button { width:100%; }
+  .college-request input { font-size:10px; }
+  .college-request .button { flex:0 0 auto; min-width:70px; }
 }
 @media (max-height: 570px) {
   .welcome-story { justify-content: flex-start; }

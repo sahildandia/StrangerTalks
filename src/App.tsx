@@ -226,7 +226,7 @@ export default function App() {
       setCaptchaToken(''); setCaptchaKey(k => k + 1);
       if (result.error) throw result.error;
       if (mode === 'register' && !result.data.session) {
-        setAuthMode('login'); setNotice('Account created. Check your email to confirm it, then log in.'); return;
+        throw new Error('Your account was created, but Supabase did not start a session. Email confirmation may still be enabled; try logging in or contact support.');
       }
       if (!result.data.user) throw new Error('Sign-in did not return a user. Please try again.');
       await rpc('st_begin', { p_adult: true, p_terms_version: TERMS_VERSION });
