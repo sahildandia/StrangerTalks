@@ -1,26 +1,12 @@
-import { ArrowRight } from 'lucide-react';
-
 export default function Dashboard({ onSelectGender, busy }: { onSelectGender: (gender: 'girl' | 'boy') => void; busy: boolean }) {
   return (
-    <section className="gender-choice" aria-label="Choose a display option">
-      <div className="gender-intro">
-        <span className="gender-kicker">ONE QUICK STEP</span>
-        <h1>How should we <span>address you?</span></h1>
-        <p>Choose an option to continue. It’s just for formality — you can chat with anyone who is online.</p>
-      </div>
+    <section className="gender-choice" aria-label="Choose gender">
+      <h1>Select your option</h1>
+      <p>Choose one to start chatting with someone who is online.</p>
       <div className="gender-buttons">
-        <button className="gender-option" disabled={busy} onClick={() => onSelectGender('girl')}>
-          <span className="gender-symbol">G</span>
-          <span className="gender-option-copy"><strong>Girl</strong><small>Continue as girl</small></span>
-          <ArrowRight className="gender-arrow" size={21}/>
-        </button>
-        <button className="gender-option" disabled={busy} onClick={() => onSelectGender('boy')}>
-          <span className="gender-symbol">B</span>
-          <span className="gender-option-copy"><strong>Boy</strong><small>Continue as boy</small></span>
-          <ArrowRight className="gender-arrow" size={21}/>
-        </button>
+        <button className="gender-option" disabled={busy} onClick={() => onSelectGender('girl')}>Girl</button>
+        <button className="gender-option" disabled={busy} onClick={() => onSelectGender('boy')}>Boy</button>
       </div>
-      <p className="gender-footnote">Your choice does not affect who you get matched with.</p>
     </section>
   );
 }
