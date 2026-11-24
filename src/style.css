@@ -269,3 +269,9 @@
 .active-users-header strong{font:700 14px Manrope,sans-serif}
 .active-users-header small{font-size:10px;color:var(--muted)}
 @media(max-width:480px){.topbar-tools{gap:8px}.active-users-header{gap:5px;padding:7px 8px}.active-users-header small{font-size:9px}.active-users-header strong{font-size:13px}}
+
+/* Slightly compact active-member chip so chat End/Skip remain visible */
+.chat-header-actions .active-users-header{padding:7px 9px;gap:5px}
+.chat-header-actions .active-users-header small{font-size:9px}
+.chat-header-actions .active-users-header strong{font-size:13px}
+@media(max-width:480px){.chat-header-actions{gap:5px}.chat-header-actions .active-users-header{padding:6px 7px;gap:4px}.chat-header-actions .active-users-header small{font-size:8px}.chat-header-button{min-width:52px;padding:0 9px}}
