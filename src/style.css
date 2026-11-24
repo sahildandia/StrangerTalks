@@ -103,3 +103,22 @@
   .simple-welcome .intro{font-size:12px;margin:10px auto 18px;line-height:1.65}
   .simple-welcome .start-card{padding:14px}
 }
+
+
+/* Fill the mobile home screen and balance the empty lower area */
+@media(max-width:720px){
+  .screen-home .simple-welcome{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    margin:0 auto;
+    padding-top:24px;
+    padding-bottom:30px;
+  }
+  .screen-home .bottom-bar{
+    margin-top:0;
+    padding-top:18px;
+    padding-bottom:max(22px,env(safe-area-inset-bottom));
+  }
+}
