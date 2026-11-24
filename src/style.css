@@ -252,3 +252,11 @@
 .message-reply-quote{display:block;margin:0 0 7px;padding:7px 9px;border-left:3px solid var(--muted);border-radius:4px;background:var(--soft);color:var(--muted);font-size:11px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .message-reply-quote span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .message-text{white-space:pre-wrap;overflow-wrap:anywhere}
+
+
+/* Live active users counter on the main dashboard */
+.active-users-box{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:190px;margin:0 auto 25px;padding:13px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text)}
+.active-users-indicator{width:9px;height:9px;flex:none;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px #22c55e20}
+.active-users-box>span:last-child{display:flex;align-items:baseline;gap:7px}
+.active-users-box strong{font:700 21px Manrope,sans-serif;letter-spacing:-.5px}
+.active-users-box small{font-size:11px;color:var(--muted)}
