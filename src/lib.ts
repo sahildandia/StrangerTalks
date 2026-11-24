@@ -14,8 +14,8 @@ export const db = configured ? createClient(url!, key!, {
 }) : null;
 export const TERMS_VERSION = '2026-10-17';
 export function clientId() {
-  let id = sessionStorage.getItem('st-controller');
-  if (!id) { id = crypto.randomUUID(); sessionStorage.setItem('st-controller', id); }
+  let id = localStorage.getItem('st-controller');
+  if (!id) { id = sessionStorage.getItem('st-controller') || crypto.randomUUID(); localStorage.setItem('st-controller', id); }
   return id;
 }
 export type ChatSession = { id: string; user_a: string; user_b: string; created_at: string; ended_at: string | null; end_reason: string | null; typing_a_until: string | null; typing_b_until: string | null };
