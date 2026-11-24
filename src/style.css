@@ -168,3 +168,44 @@
  .chat-heading{padding-top:12px;padding-bottom:12px}
  .searching-minimal{min-height:calc(100dvh - 110px);gap:20px}
 }
+
+
+/* Focused chat layout: no top header or action row */
+.screen-chat .topbar{display:none}
+.screen-chat .main-panel{
+  height:var(--app-height,100dvh);
+  min-height:var(--app-height,100dvh);
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.screen-chat .chat-area{
+  flex:1;
+  min-height:0;
+  height:auto;
+  margin:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.screen-chat .conversation-body{
+  display:flex;
+  flex:1;
+  min-height:0;
+  flex-direction:column;
+  overflow:hidden;
+}
+.screen-chat .message-list{flex:1;min-height:0}
+.screen-chat .chat-composer{
+  flex-shrink:0;
+  padding:8px 12px max(8px,env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);
+}
+.screen-chat .chat-composer form{gap:6px;padding:3px;border-radius:12px}
+.screen-chat .chat-composer input{padding:7px 9px;font-size:16px;min-height:36px}
+.screen-chat .send-button{width:36px;height:36px;min-width:36px;border-radius:9px}
+.screen-chat .chat-actions{display:none}
+@media(max-width:720px){
+  .screen-chat .chat-area{height:auto;min-height:0}
+  .screen-chat .message-list{padding:14px 15px}
+  .screen-chat .chat-composer{padding:7px 10px max(7px,env(safe-area-inset-bottom))}
+}
