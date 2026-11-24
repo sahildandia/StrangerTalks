@@ -42,6 +42,7 @@ export default function App() {
   const [online, setOnline] = useState(navigator.onLine);
   const [connected, setConnected] = useState(true);
   const [now, setNow] = useState(Date.now());
+  const [activeUsers, setActiveUsers] = useState<number | null>(null);
   const [reason, setReason] = useState('harassment');
   const [light, setLight] = useState(() => localStorage.getItem('st-theme') === 'light');
   const engaged = useRef(false);
@@ -116,6 +117,18 @@ export default function App() {
       }
     } finally { refreshing.current = false; }
   }, [apply, loadMessages]);
+
+  useEffect(() => {
+    if (screen !== 'dashboard' || !configured) return;
+    let cancelled = false;
+    const loadCount = async () => {
+      try { const count = await rpc<number>('st_active_count'); if (!cancelled) setActiveUsers(count); }
+      catch { if (!cancelled) setActiveUsers(null); }
+    };
+    void loadCount();
+    const timer = setInterval(() => { void loadCount(); }, 10000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [screen]);
 
   useEffect(() => {
     const timer = setInterval(() => { setNow(Date.now()); void refresh(); }, 3000);
@@ -281,7 +294,7 @@ export default function App() {
         {!configured ? <p className="setup-note">Chat service is temporarily unavailable. Please try again later.</p> : null}
       </section> : null}
 
-      {screen === 'dashboard' ? <Dashboard busy={busy || !online} onSelectGender={startRandom}/>:null}
+      {screen === 'dashboard' ? <Dashboard busy={busy || !online} activeUsers={activeUsers} onSelectGender={startRandom}/>:null}
 
       {screen === 'searching' ? <section className="center-state searching-minimal" aria-label="Searching"><div className="search-art" aria-hidden="true"><span className="hero-icon"><Shuffle size={42}/></span></div><p className="searching-caption">Find someone...</p><button className="button secondary" disabled={busy} onClick={leave}><X size={18}/> Cancel</button></section> : null}
 
