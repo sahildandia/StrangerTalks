@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDown, ArrowRight, Ban, Check, Flag, LockKeyhole, MessageCircle, Moon, Send, Settings, ShieldCheck, Shuffle, Sparkles, Sun, WifiOff, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, Ban, Check, Flag, Globe2, Heart, LockKeyhole, MessageCircle, Moon, Send, Settings, ShieldCheck, Shuffle, Sparkles, Sun, WifiOff, X } from 'lucide-react';
 import { App as NativeApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { configured, db, friendlyError, rpc, TERMS_VERSION, type ChatSession, type Message, type Snapshot } from './lib';
