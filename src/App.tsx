@@ -55,6 +55,7 @@ export default function App() {
   const messageInput = useRef<HTMLInputElement>(null);
   const followMessages = useRef(true);
   const [newMessages, setNewMessages] = useState(false);
+  const [peerLeft, setPeerLeft] = useState(false);
   const lastTyping = useRef(0);
   const pendingMessage = useRef<{ body: string; nonce: string; sid: string } | null>(null);
   const generation = useRef(0);
@@ -85,10 +86,10 @@ export default function App() {
 
   const apply = useCallback((snapshot: Snapshot) => {
     if (!alive.current || !engaged.current) return;
-    if (sessionRef.current?.id !== snapshot.session?.id) { setMessages([]); setDraft(''); setReplyTo(null); pendingMessage.current = null; followMessages.current = true; setNewMessages(false); }
+    if (sessionRef.current?.id !== snapshot.session?.id) { setMessages([]); setDraft(''); setReplyTo(null); pendingMessage.current = null; followMessages.current = true; setNewMessages(false); setPeerLeft(false); }
     sessionRef.current = snapshot.session;
     setSession(snapshot.session);
-    if (snapshot.session?.ended_at) { engaged.current = false; setReplyTo(null); setDraft(''); setScreen('dashboard'); }
+    if (snapshot.session?.ended_at) { engaged.current = true; setPeerLeft(true); setReplyTo(null); setDraft(''); setScreen('chat'); }
     else setScreen(snapshot.state === 'chat' ? 'chat' : snapshot.state === 'waiting' ? 'searching' : 'disconnected');
   }, []);
 
@@ -151,7 +152,7 @@ export default function App() {
         const updated = payload.new as ChatSession;
         if (engaged.current && sessionRef.current?.id === updated.id) {
           sessionRef.current = updated; setSession(updated); setNow(Date.now());
-          if (updated.ended_at) { engaged.current = false; setReplyTo(null); setDraft(''); setScreen('dashboard'); }
+          if (updated.ended_at) { engaged.current = true; setPeerLeft(true); setReplyTo(null); setDraft(''); setScreen('chat'); }
         }
       })
       .subscribe();
@@ -222,7 +223,7 @@ export default function App() {
   function leave() {
     void action(async () => {
       await rpc('st_leave', { p_session_id: sessionRef.current?.id ?? null });
-      engaged.current = false; sessionRef.current = null; setSession(null); setMessages([]); setDraft(''); pendingMessage.current = null;
+      engaged.current = false; sessionRef.current = null; setSession(null); setMessages([]); setDraft(''); setPeerLeft(false); pendingMessage.current = null;
       setScreen('dashboard'); setModal(null);
     });
   }
@@ -298,8 +299,8 @@ export default function App() {
 
       {screen === 'searching' ? <section className="center-state searching-minimal" aria-label="Searching"><div className="search-art" aria-hidden="true"><span className="hero-icon"><Shuffle size={42}/></span></div><p className="searching-caption">Find someone...</p><button className="button secondary" disabled={busy} onClick={leave}><X size={18}/> Cancel</button></section> : null}
 
-      {screen === 'chat' ? <section className="chat-area" aria-label="Live chat"><div className="conversation-body"><div ref={messageList} className="message-list" role="log" aria-label="Conversation" onScroll={e => { const list = e.currentTarget; followMessages.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; if (followMessages.current) setNewMessages(false); }}>{messages.map(message => { const parts = splitReply(message.body); return <div key={message.id} className={`message ${message.sender_id === uid ? 'mine' : 'theirs'}`}>{parts.quote ? <div className="message-reply-quote"><span>{parts.quote}</span></div> : null}<span className="message-text">{parts.text}</span><div className="message-meta"><time dateTime={message.created_at}>{time(message.created_at)}{message.sender_id === uid ? <Check size={12}/> : null}</time><button type="button" className="reply-button" onClick={() => {setReplyTo(message); messageInput.current?.focus({preventScroll:true});}} aria-label="Reply to message">Reply</button></div></div>; })}{typing ? <div className="typing"><div className="dots"><i/><i/><i/></div> Stranger is typing…</div> : null}</div>{newMessages ? <button className="jump-latest" onClick={() => { followMessages.current = true; setNewMessages(false); const list = messageList.current; if (list) list.scrollTop = list.scrollHeight; }}><ArrowDown size={15}/>New messages</button> : null}</div>
-        <div className="chat-composer">{replyTo ? <div className="reply-preview"><span>Replying to: {replyTo.body.slice(0,100)}</span><button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X size={16}/></button></div> : null}<form onSubmit={e => void send(e)}><label className="sr-only" htmlFor="message">Message</label><input ref={messageInput} id="message" autoComplete="off" enterKeyHint="send" maxLength={2000} placeholder="Say something kind…" value={draft} onChange={e => type(e.target.value)} disabled={broken || busy}/><button className="send-button" type="submit" onPointerDown={e => e.preventDefault()} aria-label={sending ? 'Sending message' : 'Send message'} disabled={!draft.trim() || broken || busy || sending}><Send size={20}/></button></form></div>
+      {screen === 'chat' ? <section className="chat-area" aria-label="Live chat"><div className="conversation-body">{peerLeft ? <div role="status" style={{margin:'12px auto',maxWidth:420,padding:'14px 18px',border:'1px solid var(--line, #444)',borderRadius:14,textAlign:'center',background:'var(--surface, #171717)'}}><strong style={{display:'block',marginBottom:6}}>User left the chat</strong><span style={{display:'block',fontSize:13,opacity:.72,marginBottom:12}}>This conversation has ended.</span><button type="button" className="button primary" disabled={busy} onClick={next}><Shuffle size={16}/> Find a new stranger</button></div> : null}<div ref={messageList} className="message-list" role="log" aria-label="Conversation" onScroll={e => { const list = e.currentTarget; followMessages.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; if (followMessages.current) setNewMessages(false); }}>{messages.map(message => { const parts = splitReply(message.body); return <div key={message.id} className={`message ${message.sender_id === uid ? 'mine' : 'theirs'}`}>{parts.quote ? <div className="message-reply-quote"><span>{parts.quote}</span></div> : null}<span className="message-text">{parts.text}</span><div className="message-meta"><time dateTime={message.created_at}>{time(message.created_at)}{message.sender_id === uid ? <Check size={12}/> : null}</time><button type="button" className="reply-button" onClick={() => {setReplyTo(message); messageInput.current?.focus({preventScroll:true});}} aria-label="Reply to message">Reply</button></div></div>; })}{typing ? <div className="typing"><div className="dots"><i/><i/><i/></div> Stranger is typing…</div> : null}</div>{newMessages ? <button className="jump-latest" onClick={() => { followMessages.current = true; setNewMessages(false); const list = messageList.current; if (list) list.scrollTop = list.scrollHeight; }}><ArrowDown size={15}/>New messages</button> : null}</div>
+        {!peerLeft ? <div className="chat-composer">{replyTo ? <div className="reply-preview"><span>Replying to: {replyTo.body.slice(0,100)}</span><button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X size={16}/></button></div> : null}<form onSubmit={e => void send(e)}><label className="sr-only" htmlFor="message">Message</label><input ref={messageInput} id="message" autoComplete="off" enterKeyHint="send" maxLength={2000} placeholder="Say something kind…" value={draft} onChange={e => type(e.target.value)} disabled={broken || busy}/><button className="send-button" type="submit" onPointerDown={e => e.preventDefault()} aria-label={sending ? 'Sending message' : 'Send message'} disabled={!draft.trim() || broken || busy || sending}><Send size={20}/></button></form></div>
       </section> : null}
 
       {screen === 'disconnected' ? <section className="center-state"><div className="hero-icon"><MessageCircle size={45}/></div><span className="pill">Every hello is a new beginning</span><h2>This conversation<br /><span>has ended.</span></h2><p>{session?.end_reason === 'timeout' ? 'The connection timed out or reached its one-hour limit.' : 'Ready for another perspective?'}<br />Your next conversation is a tap away.</p><button className="button primary" disabled={busy || !online} onClick={next}><Shuffle size={18}/>Find a new stranger<ArrowRight size={18}/></button><button className="text-button" disabled={busy} onClick={() => { generation.current++; engaged.current = false; setScreen('home'); setError(''); setMessages([]); }}>Back to home</button>{session ? <button className="text-button" onClick={() => setModal('report')}><Flag size={14}/> Report or block last stranger</button> : null}</section> : null}
