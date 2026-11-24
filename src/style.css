@@ -260,3 +260,12 @@
 .active-users-box>span:last-child{display:flex;align-items:baseline;gap:7px}
 .active-users-box strong{font:700 21px Manrope,sans-serif;letter-spacing:-.5px}
 .active-users-box small{font-size:11px;color:var(--muted)}
+
+
+/* Active member count beside the theme toggle while searching */
+.topbar-tools{display:flex;align-items:center;gap:12px;margin-left:auto}
+.active-users-header{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--text);white-space:nowrap}
+.active-users-header .active-users-indicator{width:7px;height:7px}
+.active-users-header strong{font:700 14px Manrope,sans-serif}
+.active-users-header small{font-size:10px;color:var(--muted)}
+@media(max-width:480px){.topbar-tools{gap:8px}.active-users-header{gap:5px;padding:7px 8px}.active-users-header small{font-size:9px}.active-users-header strong{font-size:13px}}
