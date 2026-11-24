@@ -246,3 +246,9 @@
  .chat-header-actions{gap:7px}
  .chat-header-button{min-width:58px;min-height:34px;padding:0 12px;font-size:11px}
 }
+
+
+/* WhatsApp-style quoted reply inside each sent message */
+.message-reply-quote{display:block;margin:0 0 7px;padding:7px 9px;border-left:3px solid var(--muted);border-radius:4px;background:var(--soft);color:var(--muted);font-size:11px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.message-reply-quote span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.message-text{white-space:pre-wrap;overflow-wrap:anywhere}
