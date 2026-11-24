@@ -77,7 +77,7 @@ export default function App() {
     if (sessionRef.current?.id !== snapshot.session?.id) { setMessages([]); setDraft(''); setReplyTo(null); pendingMessage.current = null; followMessages.current = true; setNewMessages(false); }
     sessionRef.current = snapshot.session;
     setSession(snapshot.session);
-    setScreen(snapshot.state === 'chat' ? 'chat' : snapshot.state === 'waiting' ? 'searching' : 'disconnected');
+    if (snapshot.session?.ended_at || snapshot.state === 'ended') { engaged.current = false; setReplyTo(null); setDraft(''); setScreen('dashboard'); }\n    else setScreen(snapshot.state === 'chat' ? 'chat' : snapshot.state === 'waiting' ? 'searching' : 'disconnected');
   }, []);
 
   const loadMessages = useCallback(async (sid: string, gen: number) => {
@@ -127,7 +127,7 @@ export default function App() {
         const updated = payload.new as ChatSession;
         if (engaged.current && sessionRef.current?.id === updated.id) {
           sessionRef.current = updated; setSession(updated); setNow(Date.now());
-          if (updated.ended_at) setScreen('disconnected');
+          if (updated.ended_at) { engaged.current = false; setReplyTo(null); setDraft(''); setScreen('dashboard'); }
         }
       })
       .subscribe();
@@ -254,7 +254,7 @@ export default function App() {
       <div className="side-footer"><ShieldCheck size={17}/><span>Anonymous by design. Kindness by choice.</span></div>
     </aside>
     <main className="main-panel">
-      <header className="topbar"><div className="mobile-brand"><span className="brand-icon"><MessageCircle size={21}/></span>StrangerTalk<span>.</span></div><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><button className="theme-toggle" onClick={() => setLight(v => !v)} aria-label={light ? "Switch to black theme" : "Switch to white theme"} title={light ? "Dark theme" : "Light theme"}>{light ? <Moon size={20}/> : <Sun size={20}/>}</button></header>
+      <header className="topbar"><div className="mobile-brand">StrangerTalk<span>.</span></div>{screen === 'chat' ? <div className="chat-header-actions"><button type="button" className="chat-header-button" disabled={busy || sending} onClick={leave}>End</button><button type="button" className="chat-header-button skip" disabled={busy || sending} onClick={next}>Skip</button></div> : <><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><button className="theme-toggle" onClick={() => setLight(v => !v)} aria-label={light ? "Switch to black theme" : "Switch to white theme"} title={light ? "Dark theme" : "Light theme"}>{light ? <Moon size={20}/> : <Sun size={20}/>}</button></>}</header>
       {broken && engaged.current ? <div className="network-banner" role="status"><WifiOff size={16}/> Reconnecting… Messages are paused.<button onClick={() => void refresh()}>Retry</button></div> : null}
       {!online && screen === 'home' ? <div className="network-banner" role="status"><WifiOff size={16}/> You’re offline. Connect to the internet to start a conversation.</div> : null}
       {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div> : null}
@@ -274,7 +274,7 @@ export default function App() {
 
       {screen === 'searching' ? <section className="center-state searching-minimal" aria-label="Searching"><div className="search-art" aria-hidden="true"><span className="hero-icon"><Shuffle size={42}/></span></div><p className="searching-caption">Find someone...</p><button className="button secondary" disabled={busy} onClick={leave}><X size={18}/> Cancel</button></section> : null}
 
-      {screen === 'chat' ? <section className="chat-area" aria-label="Live chat"><div className="conversation-body"><div ref={messageList} className="message-list" role="log" aria-label="Conversation" onScroll={e => { const list = e.currentTarget; followMessages.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; if (followMessages.current) setNewMessages(false); }}><div className="chat-start" aria-hidden="true"><span className="brand-icon"><MessageCircle size={24}/></span></div>{messages.map(message => <div key={message.id} className={`message ${message.sender_id === uid ? 'mine' : 'theirs'}`}><span>{message.body}</span><div className="message-meta"><time dateTime={message.created_at}>{time(message.created_at)}{message.sender_id === uid ? <Check size={12}/> : null}</time><button type="button" className="reply-button" onClick={() => {setReplyTo(message); messageInput.current?.focus({preventScroll:true});}} aria-label="Reply to message">Reply</button></div></div>)}{typing ? <div className="typing"><div className="dots"><i/><i/><i/></div> Stranger is typing…</div> : null}</div>{newMessages ? <button className="jump-latest" onClick={() => { followMessages.current = true; setNewMessages(false); const list = messageList.current; if (list) list.scrollTop = list.scrollHeight; }}><ArrowDown size={15}/>New messages</button> : null}</div>
+      {screen === 'chat' ? <section className="chat-area" aria-label="Live chat"><div className="conversation-body"><div ref={messageList} className="message-list" role="log" aria-label="Conversation" onScroll={e => { const list = e.currentTarget; followMessages.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; if (followMessages.current) setNewMessages(false); }}>{messages.map(message => <div key={message.id} className={`message ${message.sender_id === uid ? 'mine' : 'theirs'}`}><span>{message.body}</span><div className="message-meta"><time dateTime={message.created_at}>{time(message.created_at)}{message.sender_id === uid ? <Check size={12}/> : null}</time><button type="button" className="reply-button" onClick={() => {setReplyTo(message); messageInput.current?.focus({preventScroll:true});}} aria-label="Reply to message">Reply</button></div></div>)}{typing ? <div className="typing"><div className="dots"><i/><i/><i/></div> Stranger is typing…</div> : null}</div>{newMessages ? <button className="jump-latest" onClick={() => { followMessages.current = true; setNewMessages(false); const list = messageList.current; if (list) list.scrollTop = list.scrollHeight; }}><ArrowDown size={15}/>New messages</button> : null}</div>
         <div className="chat-composer">{replyTo ? <div className="reply-preview"><span>Replying to: {replyTo.body.slice(0,100)}</span><button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X size={16}/></button></div> : null}<form onSubmit={e => void send(e)}><label className="sr-only" htmlFor="message">Message</label><input ref={messageInput} id="message" autoComplete="off" enterKeyHint="send" maxLength={2000} placeholder="Say something kind…" value={draft} onChange={e => type(e.target.value)} disabled={broken || busy}/><button className="send-button" type="submit" onPointerDown={e => e.preventDefault()} aria-label={sending ? 'Sending message' : 'Send message'} disabled={!draft.trim() || broken || busy || sending}><Send size={20}/></button></form></div>
       </section> : null}
 
