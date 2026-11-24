@@ -119,7 +119,7 @@ export default function App() {
   }, [apply, loadMessages]);
 
   useEffect(() => {
-    if (screen !== 'dashboard' || !configured) return;
+    if ((screen !== 'dashboard' && screen !== 'searching') || !configured) return;
     let cancelled = false;
     const loadCount = async () => {
       try { const count = await rpc<number>('st_active_count'); if (!cancelled) setActiveUsers(count); }
@@ -278,7 +278,7 @@ export default function App() {
       <div className="side-footer"><ShieldCheck size={17}/><span>Anonymous by design. Kindness by choice.</span></div>
     </aside>
     <main className="main-panel">
-      <header className="topbar"><div className="mobile-brand">StrangerTalk<span>.</span></div>{screen === 'chat' ? <div className="chat-header-actions"><button type="button" className="chat-header-button" disabled={busy || sending} onClick={leave}>End</button><button type="button" className="chat-header-button skip" disabled={busy || sending} onClick={next}>Skip</button></div> : <><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><button className="theme-toggle" onClick={() => setLight(v => !v)} aria-label={light ? "Switch to black theme" : "Switch to white theme"} title={light ? "Dark theme" : "Light theme"}>{light ? <Moon size={20}/> : <Sun size={20}/>}</button></>}</header>
+      <header className="topbar"><div className="mobile-brand">StrangerTalk<span>.</span></div>{screen === 'chat' ? <div className="chat-header-actions"><button type="button" className="chat-header-button" disabled={busy || sending} onClick={leave}>End</button><button type="button" className="chat-header-button skip" disabled={busy || sending} onClick={next}>Skip</button></div> : <><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><div className="topbar-tools">{screen === 'searching' ? <div className="active-users-header" aria-label="Active members"><span className="active-users-indicator" aria-hidden="true"></span><strong>{activeUsers === null ? "—" : activeUsers}</strong><small>Active members</small></div> : null}<button className="theme-toggle" onClick={() => setLight(v => !v)} aria-label={light ? "Switch to black theme" : "Switch to white theme"} title={light ? "Dark theme" : "Light theme"}>{light ? <Moon size={20}/> : <Sun size={20}/>}</button></div></>}</header>
       {broken && engaged.current ? <div className="network-banner" role="status"><WifiOff size={16}/> Reconnecting… Messages are paused.<button onClick={() => void refresh()}>Retry</button></div> : null}
       {!online && screen === 'home' ? <div className="network-banner" role="status"><WifiOff size={16}/> You’re offline. Connect to the internet to start a conversation.</div> : null}
       {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div> : null}
