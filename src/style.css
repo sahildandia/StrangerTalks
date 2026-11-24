@@ -150,3 +150,21 @@
 @media(max-width:480px){
   .theme-toggle{width:40px;height:40px;min-width:40px;min-height:40px}
 }
+
+
+/* Minimal searching and chat screens */
+.searching-minimal{gap:18px}
+.searching-minimal .search-art{width:130px;height:130px}
+.searching-minimal .hero-icon{width:82px;height:82px;margin:0;border-radius:25px;transform:none;animation:pulse 2s ease-in-out infinite}
+.searching-minimal .hero-icon>svg{transform:none}
+.searching-minimal .button{min-width:130px}
+.chat-heading{min-height:68px;padding-top:12px;padding-bottom:12px}
+.chat-heading .chat-status{display:flex;align-items:center;min-height:24px}
+.chat-heading .chat-status .status-dot{width:8px;height:8px}
+.chat-start{padding:12px 0 18px}
+.chat-start .brand-icon{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:14px;background:var(--soft);color:var(--text)}
+.screen-searching .bottom-bar,.screen-chat .bottom-bar{display:none}
+@media(max-width:720px){
+ .chat-heading{padding-top:12px;padding-bottom:12px}
+ .searching-minimal{min-height:calc(100dvh - 110px);gap:20px}
+}
