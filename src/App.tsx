@@ -33,6 +33,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [online, setOnline] = useState(navigator.onLine);
+  const [onlineUsers, setOnlineUsers] = useState(0);
   const [connected, setConnected] = useState(true);
   const [now, setNow] = useState(Date.now());
   const [reason, setReason] = useState('harassment');
@@ -80,6 +81,7 @@ export default function App() {
     sessionRef.current = snapshot.session;
     setSession(snapshot.session);
     setScreen(snapshot.state === 'chat' ? 'chat' : snapshot.state === 'waiting' ? 'searching' : 'disconnected');
+    if (snapshot.state === 'disconnected') { setDraft(''); pendingMessage.current = null; }
   }, []);
 
   const loadMessages = useCallback(async (sid: string, gen: number) => {
@@ -109,6 +111,20 @@ export default function App() {
   }, [apply, loadMessages]);
 
   useEffect(() => {
+    if (!db || !uid) { setOnlineUsers(0); return; }
+    const channel = db.channel('strangertalk-online', { config: { presence: { key: uid } } });
+    channel.on('presence', { event: 'sync' }, () => {
+      setOnlineUsers(Object.keys(channel.presenceState()).length);
+    });
+    channel.subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        void channel.track({ online_at: new Date().toISOString() });
+      }
+    });
+    return () => { void db?.removeChannel(channel); };
+  }, [uid]);
+
+  useEffect(() => {
     const timer = setInterval(() => { setNow(Date.now()); void refresh(); }, 3000);
     const net = () => { setOnline(navigator.onLine); if (navigator.onLine) void refresh(); };
     const visible = () => { if (!document.hidden) void refresh(); };
@@ -129,7 +145,7 @@ export default function App() {
         const updated = payload.new as ChatSession;
         if (engaged.current && sessionRef.current?.id === updated.id) {
           sessionRef.current = updated; setSession(updated); setNow(Date.now());
-          if (updated.ended_at) setScreen('disconnected');
+          if (updated.ended_at) { setScreen('disconnected'); setDraft(''); pendingMessage.current = null; }
         }
       })
       .subscribe();
@@ -226,7 +242,7 @@ export default function App() {
       if (sessionRef.current?.id === current.id) {
         followMessages.current = true; setNewMessages(false);
         setMessages(previous => previous.some(m => m.id === message.id) ? previous : [...previous, message].slice(-200));
-        setDraft(currentDraft => currentDraft.trim() === item.body ? '' : currentDraft); pendingMessage.current = null;
+        pendingMessage.current = null;
       }
     } catch (e) { setError(friendlyError(e)); }
     finally { setSending(false); }
@@ -257,7 +273,7 @@ export default function App() {
       <div className="side-footer"><ShieldCheck size={17}/><span>Anonymous by design. Kindness by choice.</span></div>
     </aside>
     <main className="main-panel">
-      <header className="topbar"><div className="mobile-brand"><span className="brand-icon"><MessageCircle size={21}/></span>StrangerTalk<span>.</span></div><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><button className="icon-button" aria-label="Open settings" onClick={() => setModal('settings')}><Settings size={21}/></button></header>
+      <header className="topbar"><div className="mobile-brand"><span className="brand-icon"><MessageCircle size={21}/></span>StrangerTalk<span>.</span></div><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS. <b className="online-count"><Users size={14}/> {onlineUsers} online</b></span><button className="icon-button" aria-label="Open settings" onClick={() => setModal('settings')}><Settings size={21}/></button></header>
       {broken && engaged.current ? <div className="network-banner" role="status"><WifiOff size={16}/> Reconnecting… Messages are paused. Chats close after 75 seconds offline.<button onClick={() => void refresh()}>Retry</button></div> : null}
       {!online && screen === 'home' ? <div className="network-banner" role="status"><WifiOff size={16}/> You’re offline. Connect to the internet to start a conversation.</div> : null}
       {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div> : null}
