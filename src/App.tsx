@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Ban, Check, Flag, Globe2, Heart, LockKeyhole, MessageCircle, Moon, Send, Settings, ShieldCheck, Shuffle, Sparkles, Sun, Users, WifiOff, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, Ban, Check, Flag, LockKeyhole, MessageCircle, Moon, Send, Settings, ShieldCheck, Shuffle, Sparkles, Sun, WifiOff, X } from 'lucide-react';
 import { App as NativeApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { configured, db, friendlyError, rpc, TERMS_VERSION, type ChatSession, type Message, type Snapshot } from './lib';
 import Captcha from './Captcha';
 import { useViewport } from './useViewport';
-import ChatArt from './ChatArt';
 import Dashboard from './Dashboard';
-import GroupChat from './GroupChat';
 
 type Modal = 'settings' | 'privacy' | 'guidelines' | 'report' | 'end' | null;
-type Screen = 'home' | 'dashboard' | 'groups' | 'searching' | 'chat' | 'disconnected';
+type Screen = 'home' | 'dashboard' | 'searching' | 'chat' | 'disconnected';
 const support = import.meta.env.VITE_SUPPORT_EMAIL as string | undefined;
 const time = (date: string) => new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -23,7 +21,6 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [uid, setUid] = useState('');
   const [adult, setAdult] = useState(false);
-  const [consent, setConsent] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaKey, setCaptchaKey] = useState(0);
   const [needsCaptcha, setNeedsCaptcha] = useState(false);
@@ -160,7 +157,6 @@ export default function App() {
     if (!Capacitor.isNativePlatform()) return;
     const handler = NativeApp.addListener('backButton', () => {
       if (modal) setModal(null);
-      else if (screen === 'groups') window.dispatchEvent(new Event('st-group-back'));
       else if (screen === 'dashboard') setScreen('home');
       else if (screen === 'chat' || screen === 'searching') setModal('end');
       else if (screen === 'disconnected') { engaged.current = false; setScreen('home'); }
@@ -177,7 +173,7 @@ export default function App() {
   }
   function start() {
     void action(async () => {
-      if (!adult || !consent) throw new Error('Confirm you are 18 or older and accept the guidelines to start.');
+      if (!adult) throw new Error('Please confirm that you are 18 or older to continue.');
       if (!db) throw new Error('The app owner needs to connect Supabase before chatting is available.');
       const { data: authData, error: sessionError } = await db.auth.getSession();
       if (sessionError) throw sessionError;
@@ -191,7 +187,8 @@ export default function App() {
       setScreen('dashboard'); setConnected(true);
     });
   }
-  function startRandom() {
+  function startRandom(_gender: 'girl' | 'boy') {
+    // Girl/Boy is a formality only; matching deliberately ignores this choice.
     void action(async () => {
       await rpc('st_begin', { p_adult: true, p_terms_version: TERMS_VERSION });
       const snapshot = await rpc<Snapshot>('st_join');
@@ -263,21 +260,17 @@ export default function App() {
       {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div> : null}
       {notice ? <div className="feedback notice" role="status"><Check size={18}/><span>{notice}</span><button className="icon-button" aria-label="Dismiss notification" onClick={() => setNotice('')}><X size={16}/></button></div> : null}
 
-      {screen === 'home' ? <section className="welcome" aria-label="Start a conversation">
-        <div className="welcome-story">
-        <ChatArt/>
-        <h2>Your next hello<br /><span>starts here.</span></h2><p className="intro">Real conversations. No account needed.</p>
-        </div>
-        <div className="start-card"><div className="login-card-title"><h3>Welcome to StrangerTalk</h3><p>Log in anonymously and start connecting.</p></div><label className="check-row"><input type="checkbox" checked={adult} onChange={e => setAdult(e.target.checked)}/><span>I confirm that I am <strong>18 or older</strong>.</span></label><label className="check-row"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}/><span>I agree to the <button className="text-button" onClick={e => { e.preventDefault(); setModal('guidelines'); }}>Community Guidelines</button> and <button className="text-button" onClick={e => { e.preventDefault(); setModal('privacy'); }}>Privacy Policy</button>.</span></label>
+      {screen === 'home' ? <section className="welcome simple-welcome" aria-label="Start a random chat">
+        <div className="welcome-story"><h2>Meet someone<br /><span>new.</span></h2><p className="intro">Start a random conversation with anyone who is online.</p></div>
+        <div className="start-card">
+          <label className="check-row"><input type="checkbox" checked={adult} onChange={e => setAdult(e.target.checked)}/><span>I confirm that I am <strong>18 or older</strong>.</span></label>
           {needsCaptcha ? <Captcha key={captchaKey} onToken={setCaptchaToken}/> : null}
-          <button className="button primary start-button" disabled={busy || !adult || !consent || !online || (needsCaptcha && !captchaToken)} onClick={start}><MessageCircle size={20}/>{busy ? 'Logging in securely…' : 'Log in anonymously'}<ArrowRight size={20}/></button>
-          <p className="micro"><LockKeyhole size={13}/> No email. No phone. No password.</p>
+          <button className="button primary start-button" disabled={busy || !adult || !online || (needsCaptcha && !captchaToken)} onClick={start}><MessageCircle size={20}/>{busy ? 'Connecting…' : 'Start Random Chat'}<ArrowRight size={20}/></button>
         </div>
-        {!configured ? <p className="setup-note">Backend setup is required before live chatting is available.</p> : null}
+        {!configured ? <p className="setup-note">Chat service is temporarily unavailable. Please try again later.</p> : null}
       </section> : null}
 
-      {screen === 'dashboard' ? <Dashboard busy={busy || !online} onRandom={startRandom} onGroups={() => { void action(async () => { await rpc('st_begin', { p_adult: true, p_terms_version: TERMS_VERSION }); setScreen('groups'); }); }}/>:null}
-      {screen === 'groups' ? <GroupChat uid={uid} onBack={() => setScreen('dashboard')}/>:null}
+      {screen === 'dashboard' ? <Dashboard busy={busy || !online} onSelectGender={startRandom}/>:null}
 
       {screen === 'searching' ? <section className="center-state"><div className="search-art" aria-hidden="true"><div/><div/><span className="hero-icon"><Shuffle size={45}/></span></div><span className="pill">A new perspective is on its way</span><h2>Searching for<br /><span>a stranger…</span></h2><p>We’re looking for another available adult.<br />If nobody else is here, we’ll keep waiting.</p><div className="dots" aria-label="Searching"><i/><i/><i/></div><button className="button secondary" disabled={busy} onClick={leave}><X size={18}/> Cancel search</button><p className="micro">Only real people. No bots or simulated matches.</p></section> : null}
 
