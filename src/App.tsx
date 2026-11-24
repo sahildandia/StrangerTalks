@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDown, ArrowRight, Ban, Check, Flag, Globe2, Heart, LockKeyhole, MessageCircle, Send, ShieldCheck, Shuffle, Sparkles, WifiOff, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, Ban, Check, Flag, Globe2, Heart, LockKeyhole, MessageCircle, Moon, Send, ShieldCheck, Shuffle, Sparkles, Sun, WifiOff, X } from 'lucide-react';
 import { App as NativeApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { configured, db, friendlyError, rpc, TERMS_VERSION, type ChatSession, type Message, type Snapshot } from './lib';
@@ -251,7 +251,7 @@ export default function App() {
       <div className="side-footer"><ShieldCheck size={17}/><span>Anonymous by design. Kindness by choice.</span></div>
     </aside>
     <main className="main-panel">
-      <header className="topbar"><div className="mobile-brand"><span className="brand-icon"><MessageCircle size={21}/></span>StrangerTalk<span>.</span></div><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><button className="theme-toggle" onClick={() => setLight(v => !v)} aria-label={light ? "Convert to black theme" : "Convert to white theme"}>{light ? "Convert to black theme" : "Convert to white theme"}</button></header>
+      <header className="topbar"><div className="mobile-brand"><span className="brand-icon"><MessageCircle size={21}/></span>StrangerTalk<span>.</span></div><span className="live-label"><i/> REAL PEOPLE. REAL CONVERSATIONS.</span><button className="theme-toggle" onClick={() => setLight(v => !v)} aria-label={light ? "Switch to black theme" : "Switch to white theme"} title={light ? "Dark theme" : "Light theme"}>{light ? <Moon size={20}/> : <Sun size={20}/>}</button></header>
       {broken && engaged.current ? <div className="network-banner" role="status"><WifiOff size={16}/> Reconnecting… Messages are paused.<button onClick={() => void refresh()}>Retry</button></div> : null}
       {!online && screen === 'home' ? <div className="network-banner" role="status"><WifiOff size={16}/> You’re offline. Connect to the internet to start a conversation.</div> : null}
       {error ? <div className="feedback error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div> : null}
