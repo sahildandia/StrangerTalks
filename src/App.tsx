@@ -81,7 +81,7 @@ export default function App() {
     sessionRef.current = snapshot.session;
     setSession(snapshot.session);
     setScreen(snapshot.state === 'chat' ? 'chat' : snapshot.state === 'waiting' ? 'searching' : 'disconnected');
-    if (snapshot.state === 'disconnected') { setDraft(''); pendingMessage.current = null; }
+    if (snapshot.state === 'idle') { setDraft(''); pendingMessage.current = null; }
   }, []);
 
   const loadMessages = useCallback(async (sid: string, gen: number) => {
