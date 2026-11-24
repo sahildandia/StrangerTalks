@@ -75,3 +75,31 @@
 .gender-option{min-height:58px;display:flex;align-items:center;justify-content:center;border:1px solid var(--text);border-radius:8px;background:var(--bg);color:var(--text);font:600 15px 'DM Sans',sans-serif;transition:background .15s,color .15s}
 .gender-option:hover:not(:disabled){background:var(--text);color:var(--bg);transform:none}
 @media(max-width:720px){.gender-choice{width:min(390px,calc(100% - 40px));padding:28px 0}.gender-choice h1{font-size:27px}.gender-buttons{grid-template-columns:1fr 1fr}.gender-option{min-height:56px;border-radius:8px}}
+
+
+/* Compact, balanced Start Chat screen */
+.simple-welcome{
+  width:min(540px,100%);
+  margin:28px auto 0;
+  padding:12px 28px 24px;
+}
+.simple-welcome .welcome-story h2{
+  font-size:clamp(36px,4.5vw,48px);
+  line-height:1.12;
+  letter-spacing:-1.6px;
+}
+.simple-welcome .intro{
+  max-width:360px;
+  margin:12px auto 20px;
+  line-height:1.7;
+  word-spacing:1px;
+}
+.simple-welcome .start-card{padding:16px;border-radius:14px}
+.simple-welcome .start-button{margin-top:0;min-height:50px}
+.simple-welcome .age-note{margin-top:10px}
+@media(max-width:720px){
+  .simple-welcome{margin:18px auto 0;padding:10px 23px 20px}
+  .simple-welcome .welcome-story h2{font-size:36px;line-height:1.12}
+  .simple-welcome .intro{font-size:12px;margin:10px auto 18px;line-height:1.65}
+  .simple-welcome .start-card{padding:14px}
+}
