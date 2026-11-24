@@ -22,3 +22,46 @@
 .gender-choice p{margin:15px auto 28px;color:var(--muted);font-size:13px;line-height:1.7;max-width:330px}
 .gender-buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .gender-buttons .button{width:100%}
+
+
+/* Spacious gender selection dashboard */
+.gender-choice{
+  width:min(760px,calc(100% - 72px));
+  margin:auto;
+  padding:54px 0 62px;
+  text-align:left;
+  animation:appear .45s ease-out;
+}
+.gender-intro{max-width:620px;margin:0 auto 48px;text-align:center}
+.gender-kicker{display:inline-block;font-size:10px;letter-spacing:2.5px;font-weight:700;color:var(--muted);margin-bottom:22px}
+.gender-choice h1{font-size:clamp(38px,4.4vw,58px);line-height:1.14;letter-spacing:-2.3px;font-weight:800}
+.gender-choice h1 span{display:block;color:var(--muted)}
+.gender-choice p{font-size:14px;line-height:1.85;color:var(--muted);max-width:470px;margin:19px auto 0}
+.gender-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.gender-option{
+  min-height:190px;padding:28px 27px;
+  display:flex;align-items:center;gap:20px;text-align:left;
+  border:1px solid var(--line);border-radius:22px;
+  background:var(--surface);color:var(--text);
+  transition:transform .18s ease,border-color .18s ease,background .18s ease;
+}
+.gender-option:hover:not(:disabled){transform:translateY(-4px);border-color:var(--muted);background:var(--soft)}
+.gender-symbol{width:66px;height:66px;display:grid;place-items:center;flex-shrink:0;border:1px solid var(--line);border-radius:19px;background:var(--soft);color:var(--text)}
+.gender-option-copy{display:flex;flex-direction:column;gap:8px;min-width:0}
+.gender-option-copy strong{font:700 24px Manrope,sans-serif;letter-spacing:-.6px}
+.gender-option-copy small{font-size:11px;color:var(--muted)}
+.gender-arrow{margin-left:auto;color:var(--muted);flex-shrink:0}
+.gender-choice .gender-footnote{text-align:center;font-size:11px;margin:29px auto 0}
+@media(max-width:720px){
+ .gender-choice{width:min(520px,calc(100% - 42px));padding:42px 0 48px}
+ .gender-intro{margin-bottom:38px}
+ .gender-kicker{margin-bottom:18px}
+ .gender-choice h1{font-size:clamp(35px,9vw,46px);letter-spacing:-1.7px}
+ .gender-choice p{font-size:13px;margin-top:17px}
+ .gender-buttons{grid-template-columns:1fr;gap:15px}
+ .gender-option{min-height:116px;padding:22px 21px;border-radius:18px}
+ .gender-symbol{width:58px;height:58px;border-radius:16px}
+ .gender-option-copy strong{font-size:21px}
+ .gender-choice .gender-footnote{margin-top:25px}
+}
+@media(max-width:360px){.gender-choice{width:calc(100% - 34px)}.gender-option{padding:18px}.gender-intro{margin-bottom:30px}}
