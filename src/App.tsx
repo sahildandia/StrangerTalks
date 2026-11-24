@@ -77,7 +77,7 @@ export default function App() {
     if (sessionRef.current?.id !== snapshot.session?.id) { setMessages([]); setDraft(''); setReplyTo(null); pendingMessage.current = null; followMessages.current = true; setNewMessages(false); }
     sessionRef.current = snapshot.session;
     setSession(snapshot.session);
-    if (snapshot.session?.ended_at || snapshot.state === 'ended') { engaged.current = false; setReplyTo(null); setDraft(''); setScreen('dashboard'); }
+    if (snapshot.session?.ended_at) { engaged.current = false; setReplyTo(null); setDraft(''); setScreen('dashboard'); }
     else setScreen(snapshot.state === 'chat' ? 'chat' : snapshot.state === 'waiting' ? 'searching' : 'disconnected');
   }, []);
 
