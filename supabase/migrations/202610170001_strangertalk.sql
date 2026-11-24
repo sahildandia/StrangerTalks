@@ -4,14 +4,13 @@ begin;
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 
-create table public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  adult_attested_at timestamptz not null default now(),
-  terms_version text not null,
-  banned_until timestamptz,
-  last_active_at timestamptz not null default now(),
-  created_at timestamptz not null default now()
-);
+-- This project already has a minimal profiles table from the earlier prototype.
+-- Extend it in place so existing anonymous identities and foreign keys are preserved.
+alter table public.profiles
+  add column if not exists adult_attested_at timestamptz not null default now(),
+  add column if not exists terms_version text not null default '2026-10-17',
+  add column if not exists banned_until timestamptz,
+  add column if not exists last_active_at timestamptz not null default now();
 create table private.presence (
   user_id uuid primary key references public.profiles(id) on delete cascade,
   client_id uuid not null,
