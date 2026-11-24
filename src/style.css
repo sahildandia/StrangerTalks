@@ -230,3 +230,19 @@
  .screen-chat .mobile-brand{font-size:18px}
  .screen-chat .mobile-brand .brand-icon{width:31px;height:31px}
 }
+
+
+/* Chat header actions */
+.screen-chat .topbar{justify-content:space-between;align-items:center}
+.screen-chat .topbar .mobile-brand{display:flex;align-items:center;gap:0}
+.screen-chat .topbar .mobile-brand>span:last-child{color:var(--purple);margin-left:0}
+.chat-header-actions{display:flex;align-items:center;gap:9px;margin-left:auto}
+.chat-header-button{min-width:66px;min-height:36px;padding:0 15px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:600 12px 'DM Sans',sans-serif}
+.chat-header-button.skip{background:var(--primary);border-color:var(--primary);color:var(--bg)}
+.chat-header-button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:720px){
+ .screen-chat .topbar{height:58px;padding:8px 15px}
+ .screen-chat .topbar .mobile-brand{font-size:18px}
+ .chat-header-actions{gap:7px}
+ .chat-header-button{min-width:58px;min-height:34px;padding:0 12px;font-size:11px}
+}
